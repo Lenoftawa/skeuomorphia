@@ -60,6 +60,7 @@ Each note will store:
 - a unique noteID,
 - the new owner's address and
 - the current owner's address
+
 Any User that owns the stablecoin can mint notes by calling a function on the contract. 
 The user must first create a new burner account which will become the new user.
 The user mints the note by calling a function, the ERC20 tokens are transferred into the cash escrow contract. The function will save the User's address and set the new owner of note as the address of the burner account created by the user.
