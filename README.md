@@ -61,13 +61,13 @@ Each note will store:
 - the new owner's address and
 - the current owner's address
 
-Any User that owns the stablecoin can mint notes by calling a function on the contract. 
-The user must first create a new burner account which will become the new user.
-The user mints the note by calling a function, the ERC20 tokens are transferred into the cash escrow contract. The function will save the User's address and set the new owner of note as the address of the burner account created by the user.
-the function will return an ID referring to the note.
-The note will contain a compressed code containing the noteID, denomination and the privKey for the burner account.
-The Merchant can redeem notes by submitting a transaction using the privKey of the burner account. The note is identified using the noteID. The Merchant also supplies the value of the goods and the Merchat's real address so it can receive the amount. 
-The redeem function contract will check that msg.sender is the address of the burner wallet associated with the noteID. If so it will transfer the correct amount of ERC20 tokens to the merchant account and return any change to the User's account.
+Any User that owns the stablecoin can mint banknotes by calling a function on the contract. 
+The user must first create a new burner account which will become the new controller of the funds associated with that banknote.
+The user mints the banknote by calling a function on the Cash escrow contract, the ERC20 tokens are transferred into the cash escrow contract. The function will save the User's address and set the new owner of note as the address of the burner account created by the user. Tthe function will return an ID referring to the note.
+The banknote can be printed. It will contain a compressed code containing the banknoteID, denomination and the private key of the burner account.
+
+The Merchant can redeem banknotes by submitting a transaction using the privKey of the burner account. The banknote is identified using the noteID. The Merchant also supplies the value of the goods and the Merchant's real address so it can receive the amount. 
+The redeem function will check that msg.sender is the address of the burner wallet associated with the noteID. If so it will transfer the correct amount of ERC20 tokens to the merchant account and return any change to the User's account.
 Optionally, the function can contain a short description of the goods.
 The redeem function will also create an onchain Attestation to serve as a receipt (and guarantee) for the goods.
 
