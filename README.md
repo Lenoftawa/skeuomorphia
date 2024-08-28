@@ -1,5 +1,5 @@
 # Skeuomorphia
-The money printer - (demystifying Web 3 second for boomers).
+Making Web 3 payments familar to reluctant boomers who are still using physical cash.
 
 # Why?
 Mobile apps and Web 3 digital Wallets are mysterious to many older people.  We need a way to create a sense of familiarity to Web 3 payments by using familiar workflows and terminology.
