@@ -78,6 +78,8 @@ If possible, this should be a mobile implementation using the camera.
 The secret is obtained from the note.
 The merchant app calls a function of the cash escrow contract to redeem the note.  This requires the secret and the amount **CAN THIS BE FRONT-RUN??**
 
+![image](https://github.com/user-attachments/assets/10403d2c-0d7a-4482-a523-c3f738517169)
+
 
 
 ----
