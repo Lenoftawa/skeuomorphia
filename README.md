@@ -2,7 +2,8 @@
 Making Web 3 payments familar to reluctant boomers who are still using physical cash.
 
 # Why?
-Mobile apps and Web 3 digital Wallets are mysterious to many older people.  We need a way to create a sense of familiarity to Web 3 payments by using familiar workflows and terminology.
+Mobile apps and Web 3 digital Wallets are mysterious to many older people.  We need a way to create a sense of familiarity to Web 3 payments by using familiar workflows and terminology. This may seem backwards and nullifies the usefulness of Web 3 payments. However, it does highlight the parralel between the old notion of cash and Web 3 payments in that they are both permissionless diintermediated peer to peer payment methods.
+The intent is not that this becomes the ubiquitous form of payment. It simply demonstrates that an alternative monetary system is not totally novel nor is it something to be afraid of. A wallet could be created that supports these features as a beginner mode, with a more Web3 native mode as a progression.
 
 # How
 ## Legacy case
