@@ -50,9 +50,9 @@ In this flow, we simulate the ATM using a web site and simulate notes using a do
 We could extend this to online merchants by also printing the QR code as a number that can be pasted into a merchant web site. However, this make less sense because the user needs to be internet savvy enough to use a web site, so then so we would probably want to make it look a lot more like internet banking, which not that different from a Web 3 contract wallet.
 
 # What do we need to build?
-## stable coin ERC20 contract
+## Stable coin ERC20 contract
 This contract will support the standard ERC20 interface. It could be a real coin, but for simplicity we will create our own so we can easily mint into our wallet.
-## cash escrow contract
+## Cash escrow contract
 Could this be an NFT?
 This contract holds the funds that back the tokens that have been minted as notes.
 Each note will store: 
@@ -81,8 +81,6 @@ The secret is obtained from the note.
 The merchant app calls a function of the cash escrow contract to redeem the note.  This requires the secret and the amount **CAN THIS BE FRONT-RUN??**
 
 ![image](https://github.com/user-attachments/assets/10403d2c-0d7a-4482-a523-c3f738517169)
-
-
 
 ----
 # Thoughts
