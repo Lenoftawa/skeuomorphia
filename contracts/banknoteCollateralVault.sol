@@ -31,7 +31,7 @@ contract BanknoteCollateralVault {
 		uint8 denomination;
 		}
 
-	address public owner;
+	address private owner;
 	uint32 private nextId = 0;
 	mapping (uint32=>Banknote) private banknotes; // registry of banknotes
 	mapping (address => mapping (address =>uint)) private surplusFunds; // registry of ERC20 balances belonging to a minter
@@ -101,14 +101,14 @@ contract BanknoteCollateralVault {
 				tBanknote.denomination= _denomination;
 				banknotes[nextId++]=tBanknote;
 
-
+/*
                 console.log(
                     "Minting to %s id= %s  %s tokens",
                     _hash1,
                     nextId-1,
                     _denomination*10**18
                 );
-
+*/
                 // THIS IS NOT WORKING - WHY???  We will approve instead!
                 //(bool success, ) = address(_erc20).delegatecall(
                 //    abi.encodeWithSignature("transfer(address,uint256)",
@@ -132,8 +132,6 @@ contract BanknoteCollateralVault {
 
 				return nextId-1;
 		
-				// Print data to the hardhat chain console. Remove when deploying to a live network.
-				// console.log( "Miniting ....");
 			}
 		}
 		revert("Bad denomination");
@@ -161,14 +159,14 @@ contract BanknoteCollateralVault {
 
 
 		surplusFunds[_minter][_erc20]+= (_denomination*10**_decimals + _discount - _amount);
-
+/*
         console.log(
             "Redeeming note %s amount %s  change %s ",
 			_banknote,
 			_amount,
             _denomination*10**18 - _amount
         );
-
+*/
 		//require (IERC20(_erc20).approve(address(this), _amount), "Token approval refused");
         require(IERC20(_erc20).transfer(msg.sender, (_amount - _discount)), "Token transfer failed");
 
@@ -196,14 +194,14 @@ contract BanknoteCollateralVault {
 
         require (_withdrawal >0, "No funds to skim");
         require (_withdrawal >_amount, "Over limit");
-
+/*
         console.log(
             "Skimming surplus to %s amount %s  remaining %s ",
 			msg.sender,
             _amount,
             surplusFunds[msg.sender][_erc20]
         );
-
+*/
    		//require (IERC20(_erc20).approve(address(this), _amount), "Token approval refused");
         require(IERC20(_erc20).transfer(msg.sender, _withdrawal), "Token transfer failed");
 		
