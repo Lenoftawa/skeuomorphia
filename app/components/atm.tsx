@@ -61,6 +61,7 @@ export default function ATMComponent() {
             // Exit
             setScreen(screenMainMenu);
             setAmount(0); // Reset amount using setAmount
+            setMessageTop("");
         }
     }
 
