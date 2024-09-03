@@ -1,91 +1,46 @@
 import { Screen } from "./interfaces";
-
-export const screenBase: Screen = {
-    title: "Are you sure you want to print a $100 banknote?",
-    options: [
-        {
-            left: {
-                id: 1,
-                message: "1L", 
-            },
-            right: {
-                id: 5,
-                message: "1R", 
-            },
-        },
-        {
-            left: {
-                id: 2,
-                message: "2L", 
-            },
-            right: {
-                id: 6,
-                message: "2R", 
-            },
-        },
-        {
-            left: {
-                id: 3,
-                message: "3L", 
-            },
-            right: {
-                id: 7,
-                message: "3R", 
-            },
-        },
-        {
-            left: {
-                id: 4,
-                message: "4L", 
-            },
-            right: {
-                id: 8,
-                message: "4R", 
-            },
-        },
-    ],
-};
+import { ActionEnum } from "./action-enums";
 
 export const screenDisconnected: Screen = {
     title: "Please Authenticate to the ATM",
     options: [
         {
             left: {
-                id: 11,
+                actionId: ActionEnum.NO_ACTION,
                 message: "", 
             },
             right: {
-                id: 15,
+                actionId: ActionEnum.NO_ACTION,
                 message: "", 
             },
         },
         {
             left: {
-                id: 12,
+                actionId: ActionEnum.NO_ACTION,
                 message: "", 
             },
             right: {
-                id: 16,
+                actionId: ActionEnum.NO_ACTION,
                 message: "", 
             },
         },
         {
             left: {
-                id: 13,
+                actionId: ActionEnum.NO_ACTION,
                 message: "", 
             },
             right: {
-                id: 17,
+                actionId: ActionEnum.NO_ACTION,
                 message: "", 
             },
         },
         {
             left: {
-                id: 14,
+                actionId: ActionEnum.PROCESS_LOGIN,
                 message: "Login to ATM", 
             },
             right: {
-                id: 18,
+                actionId: ActionEnum.PROCESS_LOGIN,
                 message: "Login to ATM", 
             },
         },
@@ -97,41 +52,41 @@ export const screenMainMenu: Screen = {
     options: [
         {
             left: {
-                id: 21,
-                message: "", 
-            },
-            right: {
-                id: 25,
-                message: "", 
-            },
-        },
-        {
-            left: {
-                id: 22,
-                message: "", 
-            },
-            right: {
-                id: 26,
-                message: "", 
-            },
-        },
-        {
-            left: {
-                id: 23,
+                actionId: ActionEnum.GO_WITHDRAW_MENU,
                 message: "Withdraw", 
             },
             right: {
-                id: 27,
+                actionId: ActionEnum.PROCESS_DEPOSIT,
                 message: "Deposit", 
             },
         },
         {
             left: {
-                id: 24,
-                message: "Account", 
+                actionId: ActionEnum.PROCESS_BALANCE,
+                message: "Balance", 
             },
             right: {
-                id: 28,
+                actionId: ActionEnum.GO_BANK_MENU,
+                message: "Banks", 
+            },
+        },
+        {
+            left: {
+                actionId: ActionEnum.PROCESS_STATEMENT,
+                message: "Statement", 
+            },
+            right: {
+                actionId: ActionEnum.PROCESS_INVEST,
+                message: "Invest", 
+            },
+        },
+        {
+            left: {
+                actionId: ActionEnum.GO_CURRENCY_MENU,
+                message: "Currencies", 
+            },
+            right: {
+                actionId: ActionEnum.PROCESS_LOGOUT,
                 message: "Exit", 
             },
         },
@@ -143,43 +98,136 @@ export const screenWithdrawMenu: Screen = {
     options: [
         {
             left: {
-                id: 31,
+                actionId: ActionEnum.PROCESS_WITHDRAW_1,
                 message: "$1", 
             },
             right: {
-                id: 35,
+                actionId: ActionEnum.PROCESS_WITHDRAW_5,
                 message: "$5", 
             },
         },
         {
             left: {
-                id: 32,
+                actionId: ActionEnum.PROCESS_WITHDRAW_10,
                 message: "$10", 
             },
             right: {
-                id: 36,
+                actionId: ActionEnum.PROCESS_WITHDRAW_20,
                 message: "$20", 
             },
         },
         {
             left: {
-                id: 33,
+                actionId: ActionEnum.PROCESS_WITHDRAW_50,
                 message: "$50", 
             },
             right: {
-                id: 37,
+                actionId: ActionEnum.PROCESS_WITHDRAW_100,
                 message: "$100", 
             },
         },
         {
             left: {
-                id: 34,
+                actionId: ActionEnum.EXECUTE_WITHDRAW,
                 message: "Get Money", 
             },
             right: {
-                id: 38,
+                actionId: ActionEnum.CANCEL_WITHDRAW,
                 message: "Cancel", 
             },
         },
     ],
 };
+
+export const screenCurrencyMenu: Screen = {
+    title: "Select a Currency",
+    options: [
+        {
+            left: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "USD", 
+            },
+            right: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "BTC", 
+            },
+        },
+        {
+            left: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "EUR", 
+            },
+            right: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "ETH", 
+            },
+        },
+        {
+            left: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "GBP", 
+            },
+            right: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "DOGE", 
+            },
+        },
+        {
+            left: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "", 
+            },
+            right: {
+                actionId: ActionEnum.GO_MAIN_MENU,
+                message: "Cancel", 
+            },
+        },
+    ],
+};
+
+export const screenBankMenu: Screen = {
+    title: "Select a Bank",
+    options: [
+        {
+            left: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "Ethereum", 
+            },
+            right: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "Base", 
+            },
+        },
+        {
+            left: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "Arbitrum", 
+            },
+            right: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "ZKSync", 
+            },
+        },
+        {
+            left: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "Optimism", 
+            },
+            right: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "Starknet", 
+            },
+        },
+        {
+            left: {
+                actionId: ActionEnum.NO_ACTION,
+                message: "Scroll", 
+            },
+            right: {
+                actionId: ActionEnum.GO_MAIN_MENU,
+                message: "Cancel", 
+            },
+        },
+    ],
+};
+
