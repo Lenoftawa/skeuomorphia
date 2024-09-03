@@ -188,22 +188,22 @@ export default function ATMComponent() {
     }
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
-            <div className="w-full max-w-md bg-yellow-100 border-8 border-yellow-700 rounded-lg shadow-lg overflow-hidden">
+        <div className="flex items-center justify-center">
+            <div className="w-full max-w-lg bg-purple-600 border-8 border-purple-900 rounded-lg shadow-lg overflow-hidden mt-[360px]">
                 <div className="flex">
 
-                    <div className="w-1/4 space-y-4 p-4">
+                    <div className="w-1/6 space-y-4 p-4">
                         <div style={{ height: '100px' }}></div>
                         {screen.options.map((item, index) => (
                             <Button
                                 key={`left-${index}`}
                                 variant="outline"
-                                className="w-full h-12 bg-gray-200 border-2 border-gray-400"
+                                className="w-full h-9 bg-gray-200 border-2 border-gray-400"
                                 onClick={() => handleButtonClick(item.left.actionId)}
                             />
                         ))}
                     </div>
-                    <div className="w-1/2 p-4 bg-blue-500 text-white flex flex-col min-w-[216px]">
+                    <div className="w-4/6 p-4 bg-blue-500 text-white flex flex-col min-w-[256px]">
                         <div className="text-center mb-4 font-bold" style={{ height: '100px' }}>
                             { address && <AddressDisplay address={address} />}
                             { balance && <p>{balance} ETH</p> }
@@ -220,13 +220,13 @@ export default function ATMComponent() {
 
                         </div>
                     </div>
-                    <div className="w-1/4 space-y-4 p-4">
+                    <div className="w-1/6 space-y-4 p-4">
                         <div style={{ height: '100px' }}></div>
                         {screen.options.map((item, index) => (
                             <Button
                                 key={`right-${index}`}
                                 variant="outline"
-                                className="w-full h-12 bg-gray-200 border-2 border-gray-400"
+                                className="w-full h-9 bg-gray-200 border-2 border-gray-400"
                                 onClick={() => handleButtonClick(item.right.actionId)}
                             />
                         ))}
