@@ -1,6 +1,6 @@
 // Define interfaces
 export interface Option {
-    id: number;
+    actionId: number;
     message: string;
 }
 
