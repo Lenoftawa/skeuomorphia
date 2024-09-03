@@ -10,18 +10,26 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * A smart contract that mints and redeems banknotes.  The web app is responsible for printing the notes.
- * The mint function locks the amount in the vault and returns the Id of the banknote.
+ * Before calling the mint function the Dapp must create a random secret and hashes it.
+ * The mint function locks the amount in the vault, stores a hash of the secret and returns the Id of the banknote.
  * The app must print the Id as well as the private key of the redeemer.
- * Using the printed Id the receiver can find the public address of the redeemer. 
- * The redemption process requires that the receiver to impersonate the redeemer using the private key
- * The minter of the banknote receives any change froma transaction as surplus
- * The minter can skim the surplus.
- * @author LenOfTawa
+ * Using the printed Id and the secret the receiver can prove they know the secret without revealing it
+ * The redemption process requires that the receiver hashes the secret and then hashes it with its own pubkey.
+ * The contract already has the hashed secret and can hash it with the msg.sender to check they are the same.
+ * The funds are relesed to the msg.sender.
+ * The minter of the banknote receives any change from the transaction as surplus
+ * The minter can skim the surplus using a separate function.
+ * @author LenOfTawa, .....
  */
-contract banknoteCollateralVault {
+contract BanknoteCollateralVault {
 
 
-	struct Banknote {address minter; address redeemer; address erc20; uint8 denomination;}
+	struct Banknote {
+		address minter; 
+		address erc20; 
+		uint256 hashedSecret;
+		uint8 denomination;
+		}
 
 	address public owner;
 	uint32 private nextId = 0;
@@ -31,7 +39,6 @@ contract banknoteCollateralVault {
 
 	event banknoteMinted(
 		address indexed minter,
-		address redeemer,
         address erc20,
 		uint32 id,
 		uint8 denomination
@@ -40,9 +47,9 @@ contract banknoteCollateralVault {
 	event  banknoteRedeemed(
 		address indexed minter,
 		address erc20,
-		uint256 change,
-		uint32 id,
-		uint8 denomination
+		uint256 amount,
+		uint256 discount,
+		uint32 id
 	);
 
 	event surplusFundsSkimmed(
@@ -63,8 +70,13 @@ contract banknoteCollateralVault {
 	}
 
     // Getters
-	function getBanknoteInfo(uint32 _id) public view returns (address, address, address, uint8) {
-		return (banknotes[_id].minter,banknotes[_id].redeemer,banknotes[_id].erc20,banknotes[_id].denomination);
+	function getBanknoteInfo(uint32 _id) public view returns (address, uint256, address, uint8) {
+		return (
+			banknotes[_id].minter,
+			banknotes[_id].hashedSecret,
+			banknotes[_id].erc20,
+			banknotes[_id].denomination
+		);
 	}
 
 	function getSurplus(address _owner, address _erc20) public view returns (uint) {
@@ -76,21 +88,23 @@ contract banknoteCollateralVault {
 	}
 	
     // Main functions
-	function mintBanknote(address _redeemer, address _erc20, uint8 _denomination ) public returns (uint32 id) {
+	function mintBanknote(address _erc20, uint256 _hash1, uint8 _denomination ) public returns (uint32 id) {
+
+		//TODO - make the denominations defined by the ATM app. Why check it here?
 		for (uint8 i=0;i<denominations.length; i++) {
 			if(_denomination == denominations[i]) {
 				
                 Banknote memory tBanknote;
 				tBanknote.minter = address(msg.sender);
-				tBanknote.redeemer=_redeemer;
 				tBanknote.erc20=_erc20;
+				tBanknote.hashedSecret=_hash1;
 				tBanknote.denomination= _denomination;
 				banknotes[nextId++]=tBanknote;
 
 
                 console.log(
                     "Minting to %s id= %s  %s tokens",
-                    _redeemer,
+                    _hash1,
                     nextId-1,
                     _denomination*10**18
                 );
@@ -101,11 +115,16 @@ contract banknoteCollateralVault {
                 //    address(this), 
                 //    _denomination*10**18));
                 //require(success, "Token transfer failed");
+
 				//TODO - check/use surplus funds before transfering more funds.
-                require(IERC20(_erc20).transferFrom(msg.sender, address(this), _denomination*10**18), "Token transfer failed");
+
+				//NOTE: the app should use the ERC20 currency symbol so we can use any currency.
+
+				//TODO - 
+				uint8 decimals = 18; // TODO - get this from the erc20 contract.
+                require(IERC20(_erc20).transferFrom(msg.sender, address(this), _denomination*10**decimals), "Token transfer failed");
 				emit banknoteMinted(
 					msg.sender,
-					_redeemer,
                     _erc20,
 					nextId-1,
 					_denomination
@@ -122,20 +141,26 @@ contract banknoteCollateralVault {
 
 
 
-	function redeemBanknote(uint32 _banknote, uint _amount) public {
+	function redeemBanknote(uint32 _banknote, uint _amount, uint256 _hash2, uint256 _discount) public {
 
-		address _redeemer = banknotes[_banknote].redeemer;
-        require (_redeemer == msg.sender, "Fake banknote");
 
-		uint8 _denomination = banknotes[_banknote].denomination;
+		uint8 _denomination = banknotes[_banknote].denomination; // 0 if there is no valid banknote
         require(_denomination!=0, "Bad banknote");
-		require(_amount <= _denomination*10**18, "Amount too large");
+
+		require (uint256 (keccak256(abi.encodePacked(banknotes[_banknote].hashedSecret, msg.sender))) == _hash2, "Redemption denied"); 
+
+		uint8 _decimals = 18; ///TODO get this from the erc20 contract
+		require(_amount <= _denomination*10**_decimals, "Amount too large");
+		require((_discount + _amount) <= _denomination*10**_decimals, "Amount too large");
+
+
+
 		
         address _minter = banknotes[_banknote].minter;
         address _erc20 = banknotes[_banknote].erc20;
 
 
-		surplusFunds[_minter][_erc20]+= (_denomination*10**18 - _amount);
+		surplusFunds[_minter][_erc20]+= (_denomination*10**_decimals + _discount - _amount);
 
         console.log(
             "Redeeming note %s amount %s  change %s ",
@@ -145,20 +170,19 @@ contract banknoteCollateralVault {
         );
 
 		//require (IERC20(_erc20).approve(address(this), _amount), "Token approval refused");
-        require(IERC20(_erc20).transfer(_redeemer, _amount), "Token transfer failed");
+        require(IERC20(_erc20).transfer(msg.sender, (_amount - _discount)), "Token transfer failed");
 
 
 		emit banknoteRedeemed(
 			_minter,
 			_erc20,
 			_amount,
-			_banknote,
-			_denomination
+			_discount,
+			_banknote
 		); 
 
-
 		banknotes[_banknote].minter = address(0);
-		banknotes[_banknote].redeemer = address(0);
+		banknotes[_banknote].hashedSecret = 0;
 		banknotes[_banknote].erc20 = address(0);
 		banknotes[_banknote].denomination = 0;
 		delete(banknotes[_banknote]);		 
