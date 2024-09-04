@@ -1,0 +1,16 @@
+{
+    "name": "skeuomorphia-contracts",
+    "version": "1.0.0",
+    "description": "Smart contracts for banknote collateral vault",
+    "main": "index.js",
+    "scripts": {
+      "test": "npx hardhat test"
+    },
+    "devDependencies": {
+      "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+      "hardhat": "^2.14.0"
+    },
+    "dependencies": {
+      "@openzeppelin/contracts": "^4.8.0"
+    }
+  }
