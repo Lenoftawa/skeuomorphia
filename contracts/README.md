@@ -69,3 +69,51 @@ To modify or extend the contracts:
 2. Update or add tests in the `test` directory as needed.
 3. Run `npx hardhat compile` to compile your changes.
 4. Run the tests to ensure everything is working as expected.
+
+## Hedera
+
+To view your contract on the Hedera Testnet explorer:
+
+https://hashscan.io/testnet
+
+Test Hedera Connection:
+
+`node test-connection.js`
+
+Compile the contracts:
+
+`npx hardhat compile`
+
+Run the tests:
+
+`npx hardhat test`
+
+Deploy the contracts to Hedera testnet:
+
+`npx hardhat run scripts/deploy.js --network hedera`
+
+Interact with the deployed contracts:
+
+`npx hardhat run scripts/interact.js --network hedera`
+
+Replace the placeholder contract addresses (nzDollarAddress and vaultAddress) with your actual deployed contract addresses.
+
+---
+
+Create a Hedera Testnet Account:
+
+1. Go to the Hedera Portal: https://portal.hedera.com/
+2. Click on "Get started with testnet"
+3. Sign up for an account if you don't have one
+
+
+Access Your Testnet Account:
+
+1. After logging in, go to "Access testnet account"
+2. You'll see your Account ID and Private Key
+
+---
+
+Use the Hedera Token Service (HTS) instead of the custom ERC20 token for better integration with Hedera's native features.
+
+Use the Hedera Consensus Service (HCS) for additional features like timestamping or audit trails.
