@@ -89,7 +89,7 @@ event banknoteMinted(
     function getSurplus(
         address _owner,
         address _erc20
-    ) public view returns (uint) {
+    ) public view returns (uint256) {
         return (surplusFunds[address(_owner)][address(_erc20)]);
     }
 
@@ -186,9 +186,10 @@ event banknoteMinted(
 
         uint256 amount = uint256(_denomination) * 10 ** 18; // Assuming 18 decimals
         
-        //OR always use surplus funds?
-        amount-=surplusFunds[msg.sender][_erc20];
+
+        amount-=surplusFunds[msg.sender][_erc20];     a =100000-
         surplusFunds[msg.sender][_erc20] = 0;
+        
         IERC20(_erc20).safeTransferFrom(msg.sender, address(this), amount);
         /*
         if (surplusFunds[msg.sender][_erc20] >= amount) {
@@ -215,7 +216,6 @@ event banknoteMinted(
         address signer = banknotes[_banknote].pubkey; // *** DEBUG MODE*** - FORCE SUCCESS FOR NOW!!
         // Check that the message (sender's address) was signed by the private key on the banknote 
         // address signer = verifySignatureOfAddress(msg.sender, _sig);
-             
 
         require(signer == banknotes[_banknote].pubkey, "Redemption denied");
 
@@ -243,28 +243,16 @@ event banknoteMinted(
         delete (banknotes[_banknote]);
     }
 
-    function skimSurplus(address _erc20, uint _amount) public nonReentrant {
-        // uint _withdrawal = surplusFunds[msg.sender][_erc20]; // assume skim all
+    function skimSurplus(address _erc20, uint256 _amount) public nonReentrant {
+
         uint256 availableSurplus = surplusFunds[msg.sender][_erc20];
-        uint256 _withdrawal = _amount == 0 ? availableSurplus : _amount;
+        require(availableSurplus != 0, "No surplus funds");
 
-        if (_amount != 0) {
-            _withdrawal = _amount;
-        } // if there is an amount then skim that
-
-        require(_withdrawal > 0, "No funds to skim");
-        require(_withdrawal > _amount, "Over limit");
-        require(
-            _withdrawal > 0 && _withdrawal <= availableSurplus,
-            "Invalid withdrawal amount"
-        );
-
-        require(
-            IERC20(_erc20).transfer(msg.sender, _withdrawal),
-            "Token transfer failed"
-        );
+        uint256 _withdrawal = _amount == 0 ? availableSurplus : _amount; // 0 means all surplus
+        require(_withdrawal <= availableSurplus, "Amount exceeds surplus");
 
         surplusFunds[msg.sender][_erc20] -= _withdrawal;
+
         IERC20(_erc20).safeTransfer(msg.sender, _withdrawal);
 
         emit surplusFundsSkimmed(_erc20, _amount);
