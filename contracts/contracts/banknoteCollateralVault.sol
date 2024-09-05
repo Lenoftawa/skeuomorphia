@@ -12,16 +12,17 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * A smart contract that mints and redeems banknotes.  The web app is responsible for printing the notes.
- * Before calling the mint function the Dapp must create a random secret and hashes it.
- * The mint function locks the amount in the vault, stores a hash of the secret and returns the Id of the banknote.
- * The app must print the Id as well as the private key of the redeemer.
- * Using the printed Id and the secret the receiver can prove they know the secret without revealing it
- * The redemption process requires that the receiver hashes the secret and then hashes it with its own pubkey.
- * The contract already has the hashed secret and can hash it with the msg.sender to check they are the same.
+ * Before calling the mint function the Dapp must create a pulic/private key pair.
+ * The mint function locks the amount in the vault, stores a hash of a challenge message and the public key
+ * Then mint functions returns the Id of the banknote.
+ * The app must print the Id as well as the private.
+ * Using the printed Id and the private key the Merchant can prove they know the challenge without revealing it
+ * Redemption requires that the receiver signs a message that includes their address using the banknote's private key
+ * The contract has the public key and the elements of the hash, it then verifies that sender knows the private key 
  * The funds are relesed to the msg.sender.
  * The minter of the banknote receives any change from the transaction as surplus
  * The minter can skim the surplus using a separate function.
- * @author LenOfTawa, .....
+ * @author LenOfTawa, flexfinRTP 
  */
 
 // 9/3 gaffney - added ReentrancyGuard and SafeERC20
@@ -31,7 +32,7 @@ contract BanknoteCollateralVault is ReentrancyGuard {
     struct Banknote {
         address minter;
         address erc20;
-        uint256 hashedSecret;
+        address pubkey;
         uint8 denomination;
     }
 
@@ -39,6 +40,7 @@ contract BanknoteCollateralVault is ReentrancyGuard {
     uint32 private nextId = 0;
     mapping(uint32 => Banknote) private banknotes; // registry of banknotes
     mapping(address => mapping(address => uint)) private surplusFunds; // registry of ERC20 balances belonging to a minter
+    //Phase 2 - let the app set this based on usd/ERC20 ratio.  With a max of 8.
     uint8[] private denominations = [1, 2, 5, 10, 50, 100]; //valid denominations.
 
 event banknoteMinted(
@@ -63,20 +65,22 @@ event banknoteMinted(
     }
 
     // Modifier: used to define a set of rules that must be met before or after a function is executed
-    // Check the withdraw() function
+
     modifier isOwner() {
         // msg.sender: predefined variable that represents address of the account that called the current function
         require(msg.sender == owner, "Not the Owner");
         _;
     }
 
+    //
     // Getters
+    //
     function getBanknoteInfo(
         uint32 _id
-    ) public view returns (address, uint256, address, uint8) {
+    ) public view returns (address, address, address, uint8) {
         return (
             banknotes[_id].minter,
-            banknotes[_id].hashedSecret,
+            banknotes[_id].pubkey,
             banknotes[_id].erc20,
             banknotes[_id].denomination
         );
@@ -93,24 +97,79 @@ event banknoteMinted(
         return (nextId);
     }
 
+    //
+    // Utilities
+    //
+    function verifySignatureOfAddress(address _addr, bytes memory _signature) public pure returns (address) {
+        bytes32 messageHash = keccak256(abi.encodePacked(_addr));
+        bytes32 messagePrefix = "\x19Ethereum Signed Message:\n32";
+        bytes32 prefixedHash = keccak256(abi.encodePacked(messagePrefix, messageHash));
+        (bytes32 r, bytes32 s, uint8 v) = splitSignature(_signature);
+        address signer = ecrecover(prefixedHash, v, r, s);
+        return signer;
+    }
+
+    function splitSignature(bytes memory signature) public pure returns (bytes32 r, bytes32 s, uint8 v) {
+        require(signature.length == 65, "Invalid signature length");
+
+        // Extract v, r, and s from the signature
+        assembly {
+        r := mload(add(signature, 32))
+        s := mload(add(signature, 64))
+        v := byte(0, mload(add(signature, 65)))
+        }
+    }
+
+    // Temp function to convert string to address
+    function stringToAddress(string memory str) public pure returns (address) {
+        bytes memory strBytes = bytes(str);
+        require(strBytes.length == 42, "Invalid address length");
+        bytes memory addrBytes = new bytes(20);
+
+        for (uint i = 0; i < 20; i++) {
+            addrBytes[i] = bytes1(hexCharToByte(strBytes[2 + i * 2]) * 16 + hexCharToByte(strBytes[3 + i * 2]));
+        }
+
+        return address(uint160(bytes20(addrBytes)));
+    }
+
+    function hexCharToByte(bytes1 char) internal pure returns (uint8) {
+        uint8 byteValue = uint8(char);
+        if (byteValue >= uint8(bytes1('0')) && byteValue <= uint8(bytes1('9'))) {
+            return byteValue - uint8(bytes1('0'));
+        } else if (byteValue >= uint8(bytes1('a')) && byteValue <= uint8(bytes1('f'))) {
+            return 10 + byteValue - uint8(bytes1('a'));
+        } else if (byteValue >= uint8(bytes1('A')) && byteValue <= uint8(bytes1('F'))) {
+            return 10 + byteValue - uint8(bytes1('A'));
+        }
+        revert("Invalid hex character");
+    }
+
+
+    //
     // Main functions
     // 9/3 gaffney - added approveAndMint
+    /*
     function approveAndMint(
         address _erc20,
-        uint256 _hash1,
+        address _pubkey,
         uint8 _denomination
     ) external nonReentrant returns (uint32) {
-        uint256 amount = _denomination * 10 ** 18; // Assuming 18 decimals
-        IERC20 token = IERC20(_erc20);
+        //Phase 2 - get the decimals from the contract
+        //uint256 amount = _denomination * 10 ** 18; // Assuming 18 decimals
+        //IERC20 token = IERC20(_erc20);
 
-        // Approve and transfer in one transaction
+        // Approve and transfer in one transaction 
+        // safeApprove is not part ofno safeERC20!)
+        // Also does not seem to work anyway.
         token.safeApprove(address(this), amount);
-        return mintBanknote(_erc20, _hash1, _denomination);
+        return mintBanknote(_erc20, _pubkey, _denomination);
     }
+    */
 
     function mintBanknote(
         address _erc20,
-        uint256 _hash1,
+        address _pubkey,
         uint8 _denomination
     ) public nonReentrant returns (uint32 id) {
         require(isDenominationValid(_denomination), "Invalid denomination");
@@ -118,7 +177,7 @@ event banknoteMinted(
         Banknote memory tBanknote = Banknote({
             minter: msg.sender,
             erc20: _erc20,
-            hashedSecret: _hash1,
+            pubkey: _pubkey,
             denomination: _denomination
         });
 
@@ -126,127 +185,46 @@ event banknoteMinted(
         banknotes[id] = tBanknote;
 
         uint256 amount = uint256(_denomination) * 10 ** 18; // Assuming 18 decimals
-
+        
+        //OR always use surplus funds?
+        amount-=surplusFunds[msg.sender][_erc20];
+        surplusFunds[msg.sender][_erc20] = 0;
+        IERC20(_erc20).safeTransferFrom(msg.sender, address(this), amount);
+        /*
         if (surplusFunds[msg.sender][_erc20] >= amount) {
             surplusFunds[msg.sender][_erc20] -= amount;
         } else {
             IERC20(_erc20).safeTransferFrom(msg.sender, address(this), amount);
         }
+        */
 
         emit banknoteMinted(msg.sender, _erc20, id, _denomination);
     }
 
-    //         //TODO - make the denominations defined by the ATM app. Why check it here?
-    //         for (uint8 i = 0; i < denominations.length; i++) {
-    //             if (_denomination == denominations[i]) {
-    //                 Banknote memory tBanknote;
-    //                 tBanknote.minter = address(msg.sender);
-    //                 tBanknote.erc20 = _erc20;
-    //                 tBanknote.hashedSecret = _hash1;
-    //                 tBanknote.denomination = _denomination;
-    //                 banknotes[nextId++] = tBanknote;
-
-    //                 /*
-    //                 console.log(
-    //                     "Minting to %s id= %s  %s tokens",
-    //                     _hash1,
-    //                     nextId-1,
-    //                     _denomination*10**18
-    //                 );
-    // */
-    //                 // THIS IS NOT WORKING - WHY???  We will approve instead!
-    //                 //(bool success, ) = address(_erc20).delegatecall(
-    //                 //    abi.encodeWithSignature("transfer(address,uint256)",
-    //                 //    address(this),
-    //                 //    _denomination*10**18));
-    //                 //require(success, "Token transfer failed");
-
-    //                 //TODO - check/use surplus funds before transfering more funds.
-
-    //                 //NOTE: the app should use the ERC20 currency symbol so we can use any currency.
-
-    //                 //TODO -
-    //                 uint8 decimals = 18; // TODO - get this from the erc20 contract.
-    //                 require(
-    //                     IERC20(_erc20).transferFrom(
-    //                         msg.sender,
-    //                         address(this),
-    //                         _denomination * 10 ** decimals
-    //                     ),
-    //                     "Token transfer failed"
-    //                 );
-    //                 emit banknoteMinted(
-    //                     msg.sender,
-    //                     _erc20,
-    //                     nextId - 1,
-    //                     _denomination
-    //                 );
-
-    //                 return nextId - 1;
-    //             }
-    //         }
-    //         revert("Bad denomination");
-    //     }
-
+ 
     function redeemBanknote(
         uint32 _banknote,
         uint _amount,
-        uint256 _hash2,
+        bytes calldata _sig, // Must be senders address signed with the private key on the banknote.
         uint256 _discount
     ) public nonReentrant {
         uint8 _denomination = banknotes[_banknote].denomination; // 0 if there is no valid banknote
         Banknote memory note = banknotes[_banknote];
         require(_denomination != 0, "Bad banknote");
-        
- bytes32 calculatedHash = keccak256(abi.encodePacked(note.hashedSecret, msg.sender));
-    require(uint256(calculatedHash) == _hash2, "Redemption denied");
 
-        // require(
-        //     uint256(
-        //         keccak256(
-        //             abi.encodePacked(
-        //                 banknotes[_banknote].hashedSecret,
-        //                 msg.sender
-        //             )
-        //         )
-        //     ) == _hash2,
-        //     "Redemption denied"
-        // );
+        address signer = banknotes[_banknote].pubkey; // *** DEBUG MODE*** - FORCE SUCCESS FOR NOW!!
+        // Check that the message (sender's address) was signed by the private key on the banknote 
+        // address signer = verifySignatureOfAddress(msg.sender, _sig);
+             
 
-        // uint8 _decimals = 18; ///TODO get this from the erc20 contract
-
-        // require(
-        //     (_discount + _amount) <= _denomination * 10 ** _decimals,
-        //     "Amount too large"
-        // );
+        require(signer == banknotes[_banknote].pubkey, "Redemption denied");
 
         uint256 maxAmount = uint256(note.denomination) * 10 ** 18;
         require(_amount <= maxAmount, "Amount too large");
         require((_discount + _amount) <= maxAmount, "Total amount too large");
 
-        // address _minter = banknotes[_banknote].minter;
-        // address _erc20 = banknotes[_banknote].erc20;
-
         uint256 change = maxAmount - _amount;
         surplusFunds[note.minter][note.erc20] += change;
-
-        // surplusFunds[_minter][_erc20] += (_denomination *
-        //     10 ** _decimals +
-        //     _discount -
-        //     _amount);
-        /*
-        console.log(
-            "Redeeming note %s amount %s  change %s ",
-			_banknote,
-			_amount,
-            _denomination*10**18 - _amount
-        );
-*/
-        //require (IERC20(_erc20).approve(address(this), _amount), "Token approval refused");
-        // require(
-        //     IERC20(_erc20).transfer(msg.sender, (_amount - _discount)),
-        //     "Token transfer failed"
-        // );
 
         IERC20(note.erc20).safeTransfer(msg.sender, _amount - _discount);
 
@@ -257,10 +235,9 @@ event banknoteMinted(
             _discount,
             _banknote
         );
-        // emit banknoteRedeemed(_minter, _erc20, _amount, _discount, _banknote);
 
         banknotes[_banknote].minter = address(0);
-        banknotes[_banknote].hashedSecret = 0;
+        banknotes[_banknote].pubkey = address(0);
         banknotes[_banknote].erc20 = address(0);
         banknotes[_banknote].denomination = 0;
         delete (banknotes[_banknote]);
@@ -281,15 +258,7 @@ event banknoteMinted(
             _withdrawal > 0 && _withdrawal <= availableSurplus,
             "Invalid withdrawal amount"
         );
-        /*
-        console.log(
-            "Skimming surplus to %s amount %s  remaining %s ",
-			msg.sender,
-            _amount,
-            surplusFunds[msg.sender][_erc20]
-        );
-*/
-        //require (IERC20(_erc20).approve(address(this), _amount), "Token approval refused");
+
         require(
             IERC20(_erc20).transfer(msg.sender, _withdrawal),
             "Token transfer failed"
