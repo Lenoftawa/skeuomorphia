@@ -187,7 +187,7 @@ event banknoteMinted(
         uint256 amount = uint256(_denomination) * 10 ** 18; // Assuming 18 decimals
         
 
-        amount-=surplusFunds[msg.sender][_erc20];     a =100000-
+        amount-=surplusFunds[msg.sender][_erc20];
         surplusFunds[msg.sender][_erc20] = 0;
         
         IERC20(_erc20).safeTransferFrom(msg.sender, address(this), amount);
