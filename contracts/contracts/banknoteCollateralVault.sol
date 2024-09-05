@@ -41,7 +41,7 @@ contract BanknoteCollateralVault is ReentrancyGuard {
     mapping(uint32 => Banknote) private banknotes; // registry of banknotes
     mapping(address => mapping(address => uint)) private surplusFunds; // registry of ERC20 balances belonging to a minter
     //Phase 2 - let the app set this based on usd/ERC20 ratio.  With a max of 8.
-    uint8[] private denominations = [1, 2, 5, 10, 50, 100]; //valid denominations.
+    uint8[] private denominations = [2, 5, 10, 20, 50, 100]; //valid denominations.
 
 event banknoteMinted(
     address indexed minter,
@@ -166,6 +166,14 @@ event banknoteMinted(
         return mintBanknote(_erc20, _pubkey, _denomination);
     }
     */
+
+    function DepositFrom(
+        address _erc20,
+        uint256 _amount
+    ) public nonReentrant {
+        IERC20(_erc20).safeTransferFrom(msg.sender, address(this), _amount);
+        surplusFunds[msg.sender][_erc20] += _amount;
+    }
 
     function mintBanknote(
         address _erc20,
