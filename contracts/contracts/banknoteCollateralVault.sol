@@ -43,22 +43,24 @@ contract BanknoteCollateralVault is ReentrancyGuard {
     //Phase 2 - let the app set this based on usd/ERC20 ratio.  With a max of 8.
     uint8[] private denominations = [2, 5, 10, 20, 50, 100]; //valid denominations.
 
-event banknoteMinted(
-    address indexed minter,
-    address erc20,
-    uint32 id,
-    uint8 denomination
-);
-
-    event banknoteRedeemed(
+    event banknoteMinted(
         address indexed minter,
         address erc20,
+        uint32 id,
+        uint8 denomination
+    );
+
+    event banknoteRedeemed(
+        address indexed redeemer,
+        address erc20,
         uint256 amount,
-        uint256 discount,
+        bytes32 description,
         uint32 id
     );
 
-    event surplusFundsSkimmed(address indexed _erc20, uint _amount);
+    event surplusFundsSkimmed(address indexed _sender, address  _erc20, uint _amount);
+
+    event Deposited(address indexed _sender, address _erc20, uint _amount);
 
     constructor(address _owner) {
         owner = _owner;
@@ -173,6 +175,9 @@ event banknoteMinted(
     ) public nonReentrant {
         IERC20(_erc20).safeTransferFrom(msg.sender, address(this), _amount);
         surplusFunds[msg.sender][_erc20] += _amount;
+
+        emit Deposited(msg.sender, _erc20, _amount);
+
     }
 
     function mintBanknote(
@@ -213,9 +218,9 @@ event banknoteMinted(
  
     function redeemBanknote(
         uint32 _banknote,
-        uint _amount,
+        uint256 _amount,
         bytes calldata _sig, // Must be senders address signed with the private key on the banknote.
-        uint256 _discount
+        bytes32 _description
     ) public nonReentrant {
         uint8 _denomination = banknotes[_banknote].denomination; // 0 if there is no valid banknote
         Banknote memory note = banknotes[_banknote];
@@ -229,18 +234,18 @@ event banknoteMinted(
 
         uint256 maxAmount = uint256(note.denomination) * 10 ** 18;
         require(_amount <= maxAmount, "Amount too large");
-        require((_discount + _amount) <= maxAmount, "Total amount too large");
+        require((_amount) <= maxAmount, "Total amount too large");
 
         uint256 change = maxAmount - _amount;
         surplusFunds[note.minter][note.erc20] += change;
 
-        IERC20(note.erc20).safeTransfer(msg.sender, _amount - _discount);
+        IERC20(note.erc20).safeTransfer(msg.sender, _amount);
 
         emit banknoteRedeemed(
-            note.minter,
+            msg.sender,
             note.erc20,
             _amount,
-            _discount,
+            _description,
             _banknote
         );
 
@@ -263,7 +268,7 @@ event banknoteMinted(
 
         IERC20(_erc20).safeTransfer(msg.sender, _withdrawal);
 
-        emit surplusFundsSkimmed(_erc20, _amount);
+        emit surplusFundsSkimmed(msg.sender,_erc20, _withdrawal);
     }
 
     function isDenominationValid(
