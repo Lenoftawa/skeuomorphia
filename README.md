@@ -31,7 +31,7 @@ The Skeuomorphia solution will map the legacy journey to a Web 3 model as follow
 1. User goes to virtual ATM which is presented as a realistic image
 2. User presents identity information to the virtual ATM - this is simulated using Web3Auth
 3. ATM verifies the user
-4. ATM shows a screen offering different amounts (rationale: the primary finction is almost always 'Withdraw')
+4. ATM shows a screen offering different amounts (rationale: the primary function is almost always 'Withdraw')
 5. User selects a withdrawal denomination (only one note at a time to maximise simplicity)
 6. ATM verifies that there is sufficient balance in the user's account (error if not enough)
 7. ATM asks for confirmation, which is also a signal to print.
