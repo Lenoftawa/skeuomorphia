@@ -1,10 +1,10 @@
 import Image from "next/image";
-import ATMComponent from "../components/atm";
+import AtmNew from "../components/AtmNew";
 
 export default function Home() {
   return (
     <div className="image-container ">
-      <ATMComponent />
+      <AtmNew />
     </div>
   );
 }

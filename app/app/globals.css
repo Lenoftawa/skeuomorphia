@@ -1,114 +1,534 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@font-face {
+  font-family: "EnterCommand";
+  src: url("../public/entercommand.woff") format("woff2"),
+    url("../public/entercommand.woff") format("woff");
+}
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --monitor-light-color: #d3ccbc;
+  --monitor-dark-color: #ccc5b3;
+  --monitor-shadow-light: #d7d4c1;
+  --monitor-shadow-medium: #b7b19b;
+  --monitor-shadow-dark: #908e7a;
+  --monitor-shadow-very-dark: #6e6d5f;
+  --monitor-gradient: linear-gradient(
+    to bottom,
+    var(--monitor-light-color),
+    var(--monitor-dark-color)
+  );
+  --monitor-shadow-texture: 2px -2px 30px #493e2a33 inset,
+    -2px -2px 30px #493e2a33 inset, 1px -1px 1px #493e2a33 inset,
+    -1px -1px 1px #493e2a33 inset, 0 2px 30px #ddd inset;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+body {
+  background-image:url("../public/bg1.jpg");
+  background-size: cover;
+  overflow:hidden ;
+  object-fit: contain;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  margin-top: 3em;
+}
+
+.computer-container {
+  --width-monitor: 700px;
+  --height-monitor: 650px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  & .monitor {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    align-items: center;
+    width: var(--width-monitor);
+    height: var(--height-monitor);
+    background: var(--monitor-gradient);
+    border-radius: 5px;
+    box-shadow: var(--monitor-shadow-texture);
+
+    & .monitor-inner {
+      width: calc(var(--width-monitor) * 0.75);
+      height: calc(var(--height-monitor) * 0.7);
+      border-radius: 5px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #000;
+      border: 15px solid var(--monitor-shadow-medium);
+      border-top: 15px solid var(--monitor-shadow-dark);
+      border-bottom: 15px solid var(--monitor-shadow-light);
+
+      & .screen-container {
+        width: calc(var(--width-monitor) * 0.72);
+        height: calc(var(--height-monitor) * 0.68);
+        background: #222;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        border: 3px solid #000;
+        box-shadow: 10px 10px 20px 14px #0008 inset,
+          -10px -10px 20px 14px #0008 inset;
+        position: relative;
+
+        & .screen {
+          width: 100%;
+          max-width: calc(var(--width-monitor) * 0.72);
+          font-family: "EnterCommand";
+          font-size: 32px;
+          color: #fff;
+          text-shadow: 0 0 5px #ccc;
+          padding: 10px 20px;
+          box-sizing: border-box;
+          position: absolute;
+          top: 0;
+          z-index: 5;
+          transition: opacity 0.5s;
+
+          &.off {
+            opacity: 0;
+          }
+        }
+      }
+    }
+
+    & .monitor-bottom {
+      width: 100%;
+      height: 50px;
+      position: absolute;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transform: translate(150px, 0);
+
+      & .power-switch {
+        width: 38px;
+        height: 38px;
+        background: linear-gradient(
+          to bottom,
+          var(--monitor-shadow-dark),
+          var(--monitor-shadow-light)
+        );
+        border-radius: 50%;
+        margin-right: 6px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      & .power-led {
+        &:not(.on) {
+          box-shadow: 0 0 1px 1px #2228 inset;
+          animation: blink 2s infinite ease-out;
+        }
+
+        &.on {
+          background: #5cef11;
+          box-shadow: 0 0 1px 1px #2228 inset;
+        }
+      }
+    }
+
+    &::before,
+    &::after {
+      content: "";
+      display: block;
+      width: 63px;
+      height: 40px;
+      background: linear-gradient(to right, #0004 65%, #0008 80%);
+      position: absolute;
+      top: 130px;
+    }
+
+    &::before {
+      left: 0;
+    }
+
+    &::after {
+      right: 0;
+      transform: rotate(180deg);
+    }
   }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+.delete-button {
+  
+  background-color: #000;
+  color: #fff;
+  font-size: 44px;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 8px;
+  width: 60px;
+  height: 36px;
+  border-radius: 15px 15px 12px 12px;
+  cursor: pointer;
+  position: relative;
+  will-change: transform;
+  transition: all 0.1s ease-in-out 0s;
+  user-select: none;
+  /* Add gradient shading to each side */
+  background-image: linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.8),
+      rgba(0, 0, 0, 0)
+    ),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
+  background-position: bottom right, bottom right;
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  box-shadow: inset -4px -10px 0px rgba(255, 255, 255, 0.4),
+    inset -4px -8px 0px rgba(0, 0, 0, 0.3), 0px 2px 1px rgba(0, 0, 0, 0.3),
+    0px 2px 1px rgba(255, 255, 255, 0.1);
+  transform: perspective(70px) rotateX(5deg) rotateY(0deg);
+}
+
+.delete-button::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.2),
+    rgba(0, 0, 0, 0.5)
+  );
+  z-index: -1;
+  border-radius: 15px;
+  box-shadow: inset 4px 0px 0px rgba(255, 255, 255, 0.1),
+    inset 4px -8px 0px rgba(0, 0, 0, 0.3);
+  transition: all 0.1s ease-in-out 0s;
+}
+
+.delete-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-image: linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.8),
+      rgba(0, 0, 0, 0)
+    ),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
+  background-position: bottom right, bottom right;
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  z-index: -1;
+  border-radius: 15px;
+  transition: all 0.1s ease-in-out 0s;
+}
+
+.delete-button:active {
+  will-change: transform;
+  transform: perspective(80px) rotateX(5deg) rotateY(1deg) translateY(3px)
+    scale(0.66);
+  height: 36px;
+  border: 0.25px solid rgba(0, 0, 0, 0.2);
+  box-shadow: inset -4px -8px 0px rgba(255, 255, 255, 0.2),
+    inset -4px -6px 0px rgba(0, 0, 0, 0.8), 0px 1px 0px rgba(0, 0, 0, 0.9),
+    0px 1px 0px rgba(255, 255, 255, 0.2);
+  transition: all 0.1s ease-in-out 0s;
+}
+
+.delete-button::after:active {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.5),
+    rgba(255, 255, 255, 0.2)
+  );
+}
+
+.delete-button:active::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 5%;
+  left: 20%;
+  width: 50%;
+  height: 80%;
+  background-color: rgba(255, 255, 255, 0.1);
+  animation: overlay 0.1s ease-in-out 0s;
+  pointer-events: none;
+}
+
+@keyframes overlay {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+.delete-button:focus {
+  outline: none;
+}
+
+@keyframes blinkEye {
+  0%,
+  80% {
+    transform: translateY(0);
   }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+
+  80%,
+  100% {
+    transform: translateY(-10%);
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+@keyframes blink {
+  0%,
+  19% {
+    background: #ed9940;
   }
-  body {
-    @apply bg-background text-foreground;
+
+  20%,
+  99% {
+    background: #333;
   }
 }
 
-.image-container {
-  /* Ensure the container takes up full viewport height */
-  height: 100vh; 
-  width: 700px;
-  max-width: 700px;
 
-  top: 0px;
-  margin-top: 0px;
-  margin-right: auto;
-  margin-left: auto;
 
-  /* Center the image using background properties */
-  background-image: url('/images/atm.jpeg');
-  background-position: center center; 
-  background-repeat: no-repeat; 
-  position: relative; 
+/* From Uiverse.io by dylanharriscameron */ 
+.flex
+{
+  z-index: 999;
+  flex-direction: column;
+  justify-content: space-between;
+  width: auto ;
+  position: absolute;
+}
+.flex-left
+{
+  z-index: 999;
+  flex-direction: column;
+  justify-content: space-between;
+  width: auto ;
+  position: absolute;
+}
+.button1 {
 
-  /* Default: Contain the image */
-  background-size: contain; 
+  background-color: #000;
+  color: #fff;
+  font-size: 44px;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+  top: 200px;
+  left: 310px;
+  width: 45px;
+  height: 50px;
+  border-radius: 15px 15px 12px 12px;
+  cursor: pointer;
+  position: relative;
+  will-change: transform;
+  transition: all .1s ease-in-out 0s;
+  user-select: none;
+  /* Add gradient shading to each side */
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0)),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
+  background-position: bottom right, bottom right;
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  box-shadow: inset -4px -10px 0px rgba(255, 255, 255, 0.4),
+    inset -4px -8px 0px rgba(0, 0, 0, 0.3),
+    0px 2px 1px rgba(0, 0, 0, 0.3),
+    0px 2px 1px rgba(255, 255, 255, 0.1);
+  transform: perspective(70px) rotateX(5deg) rotateY(0deg);
+}
 
-  /* On smaller screens, fix the background size */
-  /* @media (max-width: 768px) { 
-    background-size: 100% auto;
-  } */
+.button1::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.5));
+  z-index: -1;
+  border-radius: 15px;
+  box-shadow: inset 4px 0px 0px rgba(255, 255, 255, 0.1),
+    inset 4px -8px 0px rgba(0, 0, 0, 0.3);
+  transition: all .1s ease-in-out 0s;
+}
+
+.button1::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0)),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
+  background-position: bottom right, bottom right;
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  z-index: -1;
+  border-radius: 15px;
+  transition: all .1s ease-in-out 0s;
+}
+
+.button1:active {
+  will-change: transform;
+  transform: perspective(80px) rotateX(5deg) rotateY(1deg) translateY(3px) scale(0.96);
+  border: 0.25px solid rgba(0, 0, 0, 0.2);
+  box-shadow: inset -4px -8px 0px rgba(255, 255, 255, 0.2),
+    inset -4px -6px 0px rgba(0, 0, 0, 0.8),
+    0px 1px 0px rgba(0, 0, 0, 0.9),
+    0px 1px 0px rgba(255, 255, 255, 0.2);
+  transition: all .1s ease-in-out 0s;
+}
+
+.button1::after:active {
+  background-image: linear-gradient(to bottom,rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0.2));
+}
+
+.button1:active::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 5%;
+  left: 20%;
+  width: 50%;
+  height: 80%;
+  background-color: rgba(255, 255, 255, 0.1);
+  animation: overlay1 0.1s ease-in-out 0s;
+  pointer-events: none;
+}
+
+@keyframes overlay1 {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.button1:focus {
+  outline: none;
+}
+
+
+.button2 {
+
+  background-color: #000;
+  color: #fff;
+  font-size: 44px;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+  top: 200px;
+  left: -310px;
+  width: 45px;
+  height: 50px;
+  border-radius: 15px 15px 12px 12px;
+  cursor: pointer;
+  position: relative;
+  will-change: transform;
+  transition: all .1s ease-in-out 0s;
+  user-select: none;
+  /* Add gradient shading to each side */
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0)),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
+  background-position: bottom right, bottom right;
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  box-shadow: inset -4px -10px 0px rgba(255, 255, 255, 0.4),
+    inset -4px -8px 0px rgba(0, 0, 0, 0.3),
+    0px 2px 1px rgba(0, 0, 0, 0.3),
+    0px 2px 1px rgba(255, 255, 255, 0.1);
+  transform: perspective(70px) rotateX(5deg) rotateY(0deg);
+}
+
+.button2::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.5));
+  z-index: -1;
+  border-radius: 15px;
+  box-shadow: inset 4px 0px 0px rgba(255, 255, 255, 0.1),
+    inset 4px -8px 0px rgba(0, 0, 0, 0.3);
+  transition: all .1s ease-in-out 0s;
+}
+
+.button2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0)),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0));
+  background-position: bottom right, bottom right;
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  z-index: -1;
+  border-radius: 15px;
+  transition: all .1s ease-in-out 0s;
+}
+
+.button2:active {
+  will-change: transform;
+  transform: perspective(80px) rotateX(5deg) rotateY(1deg) translateY(3px) scale(0.96);
+  border: 0.25px solid rgba(0, 0, 0, 0.2);
+  box-shadow: inset -4px -8px 0px rgba(255, 255, 255, 0.2),
+    inset -4px -6px 0px rgba(0, 0, 0, 0.8),
+    0px 1px 0px rgba(0, 0, 0, 0.9),
+    0px 1px 0px rgba(255, 255, 255, 0.2);
+  transition: all .1s ease-in-out 0s;
+}
+
+.button2::after:active {
+  background-image: linear-gradient(to bottom,rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0.2));
+}
+
+.button2:active::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 5%;
+  left: 20%;
+  width: 50%;
+  height: 80%;
+  background-color: rgba(255, 255, 255, 0.1);
+  animation: overlay1 0.1s ease-in-out 0s;
+  pointer-events: none;
+}
+
+@keyframes overlay1 {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.button2:focus {
+  outline: none;
 }
