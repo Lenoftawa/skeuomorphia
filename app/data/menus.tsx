@@ -54,7 +54,7 @@ export const screenMoreOptions: Screen = {
     },
     {
       left: { message: "<Withdraw", actionId: ActionEnum.GO_WITHDRAW },
-      right: { message: "Statement>", actionId: ActionEnum.GO_STATEMENT },
+      right: { message: "Statement>", actionId: ActionEnum.VIEW_BANKNOTES },
     },
     {
       left: { message: "<Invest", actionId: ActionEnum.GO_INVEST },
