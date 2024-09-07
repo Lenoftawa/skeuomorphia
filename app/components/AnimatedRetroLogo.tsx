@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, CSSProperties } from 'react';
 import Image from 'next/image';
 
 const AnimatedRetroLogo = () => {
@@ -10,14 +10,14 @@ const AnimatedRetroLogo = () => {
   }, []);
 
   // Inline styles for the glitch effect
-  const glitchContainerStyle = {
+  const glitchContainerStyle: CSSProperties = {
     position: 'relative',
     width: '200px',
     height: '200px',
     display: 'inline-block',
   };
 
-  const glitchStyle = {
+  const glitchStyle: CSSProperties = {
     position: 'absolute',
     top: 0,
     left: 0,
