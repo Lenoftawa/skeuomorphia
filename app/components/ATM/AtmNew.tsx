@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { Copy } from "lucide-react";
 import AddressDisplay from "../../components/AddressDisplay";
 import AnimatedRetroLogo from "../AnimatedRetroLogo";
+import BanknotePrinter from "../BanknotePrinter";
 import {
   mintBanknote,
   getBanknoteInfo,
@@ -40,6 +41,7 @@ export default function ATM() {
   const [messageBottom, setMessageBottom] = useState<string>("");
   const [amount, setAmount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showBanknotePrinter, setShowBanknotePrinter] = useState(false);
   const [mintedBanknotes, setMintedBanknotes] = useState<
     Array<{ id: number; denomination: number; tokenSymbol: string }>
   >([]);
@@ -263,6 +265,12 @@ export default function ATM() {
       case ActionEnum.GO_SETTINGS:
         setScreen(screenSettings);
         break;
+      case ActionEnum.PRINT_TEST_BANKNOTE:
+        setShowBanknotePrinter(true);
+        break;
+        case ActionEnum.EXECUTE_PRINT_BANKNOTE:
+          setShowBanknotePrinter(true);
+          break;
       case ActionEnum.PROCESS_WITHDRAW_100:
       case ActionEnum.PROCESS_WITHDRAW_50:
       case ActionEnum.PROCESS_WITHDRAW_20:
@@ -454,7 +462,14 @@ export default function ATM() {
                         </button>
                       </div>
                     )}
-
+                    {showBanknotePrinter && (
+                      <BanknotePrinter
+                        onClose={() => setShowBanknotePrinter(false)}
+                        onPrint={() =>
+                          handleButtonClick(ActionEnum.EXECUTE_PRINT_BANKNOTE)
+                        }
+                      />
+                    )}
                     <div
                       style={{
                         flexGrow: 1,

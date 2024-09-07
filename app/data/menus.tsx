@@ -249,14 +249,14 @@ export const screenSettings: Screen = {
     {
       left: { message: "", actionId: ActionEnum.NO_ACTION },
       right: { message: "", actionId: ActionEnum.NO_ACTION },
-    },
+    }, 
     {
       left: { message: "", actionId: ActionEnum.NO_ACTION },
       right: { message: "", actionId: ActionEnum.NO_ACTION },
     },
     {
-      left: { message: "", actionId: ActionEnum.NO_ACTION },
-      right: { message: "", actionId: ActionEnum.NO_ACTION },
+      left: { message: "<Print Test Banknote", actionId: ActionEnum.PRINT_TEST_BANKNOTE },
+      right: { message: "Execute Print>", actionId: ActionEnum.EXECUTE_PRINT_BANKNOTE },
     },
     {
       left: { message: "<Back", actionId: ActionEnum.GO_MORE_OPTIONS },
