@@ -101,8 +101,23 @@ contract BanknoteCollateralVault is ReentrancyGuard {
     // Utilities
     //----------
 
-    // Verifies that a given digital signature corresponds to a specific Ethereum address.
-    function verifySignatureOfAddress(address _addr, bytes memory _signature) public pure returns (address) {
+    function verifySignature(string memory _message, bytes memory _signature) public view returns (bool isValid) {
+
+        // Hash the message with the Ethereum signed message prefix
+        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n5", _message));
+
+        // Split the signature into r, s, and v components
+        (bytes32 r, bytes32 s, uint8 v) = splitSignature(_signature);
+
+        // Recover the signer's address
+        address recoveredAddress = ecrecover(messageHash, v, r, s);
+
+        // Verify the recovered address matches the sender's address
+        return (recoveredAddress == msg.sender);
+    }
+
+    // Verifies that the message contains the correct Address, and returns the signer of the message
+    function recoverSignerOfAddress(address _addr, bytes memory _signature) public pure returns (address) {
         bytes32 messageHash = keccak256(abi.encodePacked(_addr));
         bytes32 messagePrefix = "\x19Ethereum Signed Message:\n32";
         bytes32 prefixedHash = keccak256(abi.encodePacked(messagePrefix, messageHash));
@@ -110,10 +125,10 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         address signer = ecrecover(prefixedHash, v, r, s);
         return signer;
     }
+    
     // Takes a digital signature as input and extracts its three components: r, s, and v.
-    function splitSignature(bytes memory signature) public pure returns (bytes32 r, bytes32 s, uint8 v) {
+    function splitSignature(bytes memory signature) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
         require(signature.length == 65, "Invalid signature length");
-
         // Extract v, r, and s from the signature
         assembly {
         r := mload(add(signature, 32))
@@ -122,30 +137,6 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         }
     }
 
-    // Temp function to convert string to address
-    function stringToAddress(string memory str) public pure returns (address) {
-        bytes memory strBytes = bytes(str);
-        require(strBytes.length == 42, "Invalid address length");
-        bytes memory addrBytes = new bytes(20);
-
-        for (uint i = 0; i < 20; i++) {
-            addrBytes[i] = bytes1(hexCharToByte(strBytes[2 + i * 2]) * 16 + hexCharToByte(strBytes[3 + i * 2]));
-        }
-        return address(uint160(bytes20(addrBytes)));
-    }
-
-    // Cnverts a single hex char into its corresponding numeric byte value (uint8). 
-    function hexCharToByte(bytes1 char) internal pure returns (uint8) {
-        uint8 byteValue = uint8(char);
-        if (byteValue >= uint8(bytes1('0')) && byteValue <= uint8(bytes1('9'))) {
-            return byteValue - uint8(bytes1('0'));
-        } else if (byteValue >= uint8(bytes1('a')) && byteValue <= uint8(bytes1('f'))) {
-            return 10 + byteValue - uint8(bytes1('a'));
-        } else if (byteValue >= uint8(bytes1('A')) && byteValue <= uint8(bytes1('F'))) {
-            return 10 + byteValue - uint8(bytes1('A'));
-        }
-        revert("Invalid hex character");
-    }
 
     // Check that the domination is one of the possibles/
     function isDenominationValid(
@@ -233,9 +224,9 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         Banknote memory note = banknotes[_banknote];
         require(_denomination != 0, "Bad banknote");
 
-        address signer = banknotes[_banknote].pubkey; // *** DEBUG MODE*** - FORCE SUCCESS FOR NOW!!
+        //address signer = banknotes[_banknote].pubkey; // *** DEBUG MODE*** - FORCE SUCCESS FOR NOW!!
         // Check that the message (sender's address) was signed by the private key on the banknote 
-        // address signer = verifySignatureOfAddress(msg.sender, _sig);
+        address signer = recoverSignerOfAddress(msg.sender, _sig);
 
         require(signer == banknotes[_banknote].pubkey, "Redemption denied");
 
@@ -283,6 +274,7 @@ contract BanknoteCollateralVault is ReentrancyGuard {
 
         emit surplusFundsSkimmed(msg.sender,_erc20, _withdrawal);
     }
+
 
     /**
      * Function that allows the contract to receive ETH
