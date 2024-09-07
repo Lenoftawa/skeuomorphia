@@ -175,7 +175,6 @@ contract BanknoteCollateralVault is ReentrancyGuard {
     ) public nonReentrant {
         IERC20(_erc20).safeTransferFrom(msg.sender, address(this), _amount);
         surplusFunds[msg.sender][_erc20] += _amount;
-
         emit Deposited(msg.sender, _erc20, _amount);
 
     }
@@ -199,18 +198,15 @@ contract BanknoteCollateralVault is ReentrancyGuard {
 
         uint256 amount = uint256(_denomination) * 10 ** 18; // Assuming 18 decimals
         
-
-        amount-=surplusFunds[msg.sender][_erc20];
-        surplusFunds[msg.sender][_erc20] = 0;
-        
-        IERC20(_erc20).safeTransferFrom(msg.sender, address(this), amount);
-        /*
-        if (surplusFunds[msg.sender][_erc20] >= amount) {
-            surplusFunds[msg.sender][_erc20] -= amount;
-        } else {
+        // Transfer is only required if the surplus exceeds the amount
+        if (amount >= surplusFunds[msg.sender][_erc20]){
+            amount-=surplusFunds[msg.sender][_erc20];
+            surplusFunds[msg.sender][_erc20] = 0;
             IERC20(_erc20).safeTransferFrom(msg.sender, address(this), amount);
+        } else {
+            // Just reduce the surplus.
+            surplusFunds[msg.sender][_erc20] -= amount;
         }
-        */
 
         emit banknoteMinted(msg.sender, _erc20, id, _denomination);
     }

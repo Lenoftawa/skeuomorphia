@@ -36,18 +36,21 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions, l
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">{t.recentTransactions}</h2>
+           <div className="container2"></div>
+    <div className="container2">
+      </div>
+      <h2 className="merchant-title">{t.recentTransactions}</h2>
       {transactions.length === 0 ? (
-        <p className="text-sm text-gray-500">{t.noTransactions}</p>
+        <p className="merchant-subtitle">{t.noTransactions}</p>
       ) : (
         <ul className="space-y-3">
           {transactions.map((tx, index) => (
-            <li key={index} className="bg-gray-50 p-3 rounded-md shadow-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-900">{t.amount}: {currency} {tx.amount.toFixed(2)}</span>
-                <span className="text-xs text-gray-500">{new Date(tx.timestamp).toLocaleString()}</span>
+            <li key={index} className="merchant-subtitle">
+              <div className="container2">
+                <span className="merchant-subtitle">{t.amount}: {currency} {tx.amount.toFixed(2)}</span>
+                <span className="merchant-subtitle">{new Date(tx.timestamp).toLocaleString()}</span>
               </div>
-              <p className="text-xs text-gray-600 mt-1">{t.transactionId}: {tx.txHash.substr(0, 10)}...</p>
+              <p className="merchant-subtitle">{t.transactionId}: {tx.txHash.substr(0, 10)}...</p>
             </li>
           ))}
         </ul>

@@ -5,6 +5,13 @@
 }
 
 :root {
+  --primary-color: #9a9a9a;
+  --secondary-color: #00ff11;
+  --background-color: #000000;
+  --text-color: #ffffff;
+  --bg-color-1: #0a0a2a;
+  --bg-color-2: #1a1a3a;
+  --bg-color-3: #2a2a4a;
   --monitor-light-color: #d3ccbc;
   --monitor-dark-color: #ccc5b3;
   --monitor-shadow-light: #d7d4c1;
@@ -37,16 +44,78 @@
 }
 
 body {
-  background-image:url("../public/bg1.jpg");
+  font-family: 'EnterCommand', monospace;
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Landing Page Background */
+.landing-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(
+    45deg,
+    var(--bg-color-1) 0%,
+    var(--bg-color-2) 50%,
+    var(--bg-color-3) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+/* ATM Page Background */
+.atm-background {
+  background-image: url("../public/bg1.jpg");
   background-size: cover;
-  overflow:hidden ;
-  object-fit: contain;
+  background-position: center;
+  height: 100vh;
+  width: 100vw;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+
+/* Merchant Page Background */
+.merchant-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background-color: #1a1a1a;
+  background-image: 
+    radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+    radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+    radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px),
+    radial-gradient(rgba(255,255,255,.4), rgba(255,255,255,.1) 2px, transparent 30px);
+  background-size: 550px 550px, 350px 350px, 250px 250px, 150px 150px;
+  background-position: 0 0, 40px 60px, 130px 270px, 70px 100px;
+  animation: backgroundShift 60s linear infinite;
+}
+
+@keyframes backgroundShift {
+  0% { background-position: 0 0, 40px 60px, 130px 270px, 70px 100px; }
+  100% { background-position: 550px 550px, 590px 610px, 680px 820px, 620px 650px; }
 }
 
 .container {
   display: flex;
   justify-content: center;
   margin-top: 3em;
+}
+
+.container2 {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
 }
 
 .computer-container {
@@ -625,6 +694,28 @@ address-display {
   animation: scanline 6s linear infinite;
 }
 
+.retro-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.25) 50%
+  );
+  background-size: 100% 4px;
+  z-index: 2;
+  pointer-events: none;
+  animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.9; }
+  100% { opacity: 1; }
+}
+
 @keyframes flicker {
   0% { opacity: 0.9; }
   100% { opacity: 1; }
@@ -633,4 +724,426 @@ address-display {
 @keyframes scanline {
   0% { top: 0; }
   100% { top: 100%; }
+}
+
+.retro-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+}
+
+.retro-screen {
+  background-color: #00aa11;
+  border: 4px solid var(--primary-color);
+  border-radius: 22px;
+  padding: 2rem;
+  width: 80%;
+  max-width: 600px;
+  box-shadow: 0 0 20px var(--primary-color);
+}
+
+.retro-screen-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.retro-title {
+  font-size: 4rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.retro-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 2rem;
+  color: black;
+}
+
+.retro-text {
+  font-size: 2rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.retro-button-container {
+  display: flex;
+  margin-top: 2rem;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.retro-button {
+  background-color: var(--primary-color);
+  color: var(--background-color);
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 1.8rem;
+  border-radius: 11px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.retro-button:hover {
+  background-color: var(--secondary-color);
+  box-shadow: 0 0 10px var(--secondary-color);
+}
+
+.retro-button-icon {
+  margin-right: 0.5rem;
+  width:46px;
+  height: 46px;
+}
+
+.glitch-text {
+  animation: glitch 1s linear infinite;
+}
+
+@keyframes glitch {
+  2%, 64% {
+    transform: translate(2px,0) skew(0deg);
+  }
+  4%, 60% {
+    transform: translate(-2px,0) skew(0deg);
+  }
+  62% {
+    transform: translate(0,0) skew(5deg); 
+  }
+}
+
+.typewriter-text {
+  overflow: hidden;
+  border-right: 0.15em solid var(--primary-color);
+  white-space: nowrap;
+  margin: 0 auto;
+  letter-spacing: 0.15em;
+  animation: typing 3.5s steps(30, end), blink-caret 0.75s step-end infinite;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: var(--primary-color) }
+}
+
+.animated-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(
+    45deg,
+    var(--bg-color-1) 0%,
+    var(--bg-color-2) 50%,
+    var(--bg-color-3) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.merchant-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a237e, #0d47a1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  font-family: 'EnterCommand', monospace;
+}
+
+.merchant-content {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.merchant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.merchant-title {
+  font-size: 1.5rem;
+  color: #1a237e;
+  margin: 0;
+}
+
+.merchant-settings-toggle {
+  background: none;
+  border: none;
+  font-weight: 600;
+  text-decoration: underline;
+  color: #3f51b5;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: color 0.3s ease;
+}
+
+.merchant-settings-toggle:hover {
+  color: #1a237e;
+}
+
+.merchant-step {
+  animation: fadeIn 0.5s ease;
+}
+
+.merchant-subtitle {
+  font-size: 1.2rem;
+  color: #1a237e;
+  margin-bottom: 1rem;
+}
+
+.merchant-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #3f51b5;
+}
+
+.merchant-input,
+.merchant-select {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid #3f51b5;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.merchant-input:focus,
+.merchant-select:focus {
+  outline: none;
+  border-color: #1a237e;
+}
+
+.merchant-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #3f51b5;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.merchant-button:hover:not(:disabled) {
+  background-color: #1a237e;
+}
+
+.merchant-button:disabled {
+  background-color: #9fa8da;
+  cursor: not-allowed;
+}
+
+.merchant-button-redeem {
+  background-color: #4caf50;
+}
+
+.merchant-button-redeem:hover:not(:disabled) {
+  background-color: #388e3c;
+}
+
+.merchant-error {
+  background-color: #ffcdd2;
+  color: #b71c1c;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.merchant-confirmation {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 0.5rem;
+  animation: fadeInOut 2s ease;
+}
+
+.merchant-scanned-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.merchant-check-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  background-color: #4caf50;
+  border-radius: 50%;
+  margin-left: 0.5rem;
+  position: relative;
+}
+
+.merchant-check-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 0.5rem;
+  height: 0.25rem;
+  border: 2px solid white;
+  border-top: none;
+  border-left: none;
+}
+
+.merchant-balance-info {
+  background-color: #e8eaf6;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.merchant-balance-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.merchant-receipt {
+  background-color: #e8f5e9;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.merchant-receipt-title {
+  font-size: 1.1rem;
+  color: #1b5e20;
+  margin-bottom: 0.5rem;
+}
+
+.merchant-receipt-info {
+  font-size: 0.9rem;
+  color: #2e7d32;
+  margin-bottom: 0.25rem;
+}
+
+.merchant-etherscan-link {
+  color: #1565c0;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.merchant-etherscan-link:hover {
+  text-decoration: underline;
+}
+
+.merchant-action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.merchant-button-email {
+  background-color: #2196f3;
+}
+
+.merchant-button-email:hover {
+  background-color: #1976d2;
+}
+
+.merchant-button-print {
+  background-color: #757575;
+}
+
+.merchant-button-print:hover {
+  background-color: #616161;
+}
+
+.merchant-step-indicators {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.merchant-step-indicator {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  color: #757575;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.merchant-step-indicator.active {
+  background-color: #3f51b5;
+  color: white;
+}
+
+.merchant-settings {
+  animation: fadeIn 0.5s ease;
+}
+
+.merchant-setting-item {
+  margin-bottom: 1rem;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (max-width: 600px) {
+  .merchant-content {
+    padding: 1rem;
+  }
+
+  .merchant-title {
+    font-size: 1.2rem;
+  }
+
+  .merchant-action-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }

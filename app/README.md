@@ -39,3 +39,8 @@ https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
 https://developers.circle.com/stablecoins/docs/eurc-on-test-networks
 
 https://faucet.circle.com/
+
+contracts:
+
+vault sep eth testnet: 0xbf26b234f3e48b32cfdad055b31a99c19cb45557
+nzdt sep eth testnet: 0xaB0e2aEF0d236E0754E79eD34380a0Ec9700fE02

@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Skeuomorphia",
-  description: "Skeuomorphia",
+  description: "Skeuomorphia Bank - Mint and Redeem Stablecoin Banknotes",
 };
 
 export default function RootLayout({

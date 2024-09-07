@@ -3,7 +3,7 @@ import AtmNew from '@/components/ATM/AtmNew';
 
 export default function AtmPage() {
   return (
-    <div className="image-container">
+    <div className="atm-background">
       <AtmNew />
     </div>
   );

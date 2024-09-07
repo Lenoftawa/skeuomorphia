@@ -58,7 +58,7 @@ export const screenMoreOptions: Screen = {
     },
     {
       left: { message: "<Invest", actionId: ActionEnum.GO_INVEST },
-      right: { message: "Currencies>", actionId: ActionEnum.GO_CURRENCIES },
+      right: { message: "Currency>", actionId: ActionEnum.GO_CURRENCIES },
     },
     {
       left: { message: "<Cancel", actionId: ActionEnum.GO_MAIN_MENU },
@@ -233,7 +233,7 @@ export const screenCurrencies: Screen = {
       right: { message: "DOGE>", actionId: ActionEnum.NO_ACTION },
     },
     {
-      left: { message: "<GBP", actionId: ActionEnum.NO_ACTION },
+      left: { message: "<NZDT>", actionId: ActionEnum.NO_ACTION },
       right: { message: "PEPE>", actionId: ActionEnum.NO_ACTION },
     },
     {

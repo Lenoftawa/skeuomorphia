@@ -1,8 +1,8 @@
 import { sepolia } from "viem/chains";
 import { Web3Auth } from "@web3auth/modal";
 import {
-  createPublicClient,
   createWalletClient,
+  createPublicClient,
   custom,
   formatUnits,
   parseUnits,
@@ -196,35 +196,37 @@ const CONTRACT_ABI = [
         stateMutability: "nonpayable",
         type: "function",
       },
+
       {
         inputs: [
           {
             internalType: "address",
             name: "_erc20",
-            type: "address",
+            type: "address"
           },
           {
             internalType: "address",
             name: "_pubkey",
-            type: "address",
+            type: "address"
           },
           {
             internalType: "uint8",
             name: "_denomination",
-            type: "uint8",
-          },
+            type: "uint8"
+          }
         ],
         name: "mintBanknote",
         outputs: [
           {
             internalType: "uint32",
             name: "id",
-            type: "uint32",
-          },
+            type: "uint32"
+          }
         ],
         stateMutability: "nonpayable",
-        type: "function",
+        type: "function"
       },
+      
       {
         inputs: [
           {
@@ -435,7 +437,8 @@ const CONTRACT_ABI = [
   },
 ];
 
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
+const CONTRACT_ADDRESS = process.env
+  .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}`;
 const EURC_ADDRESS = process.env.NEXT_PUBLIC_EURC_ADDRESS as `0x${string}`;
 const NZDT_ADDRESS = process.env.NEXT_PUBLIC_NZDT_ADDRESS as `0x${string}`;
@@ -483,6 +486,15 @@ export async function mintBanknote(
   const { publicClient, walletClient } = await getClients(provider);
   const [address] = await walletClient.getAddresses();
 
+  // Approve token spending
+  const approvalTx = await approveTokenSpending(
+    provider,
+    erc20Address,
+    denomination.toString()
+  );
+  console.log(`Token spending approved. Transaction: ${approvalTx}`);
+
+  // Mint banknote
   const { request } = await publicClient.simulateContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
@@ -492,13 +504,18 @@ export async function mintBanknote(
   });
 
   const txHash = await walletClient.writeContract(request);
-  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+  const receipt = await publicClient.waitForTransactionReceipt({
+    hash: txHash,
+  });
 
   const mintEvent = receipt.logs.find(
-    (log) => log.topics[0] === keccak256(toBytes("banknoteMinted(address,address,uint32,uint8)"))
+    (log) =>
+      log.topics[0] ===
+      keccak256(toBytes("banknoteMinted(address,address,uint32,uint8)"))
   ) as Log<bigint, number, false> | undefined;
 
-  const id = mintEvent && mintEvent.topics[3] ? parseInt(mintEvent.topics[3], 16) : 0;
+  const id =
+    mintEvent && mintEvent.topics[3] ? parseInt(mintEvent.topics[3], 16) : 0;
 
   return { txHash, id };
 }
@@ -522,14 +539,22 @@ export async function redeemBanknote(
   });
 
   const txHash = await walletClient.writeContract(request);
-  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+  const receipt = await publicClient.waitForTransactionReceipt({
+    hash: txHash,
+  });
 
   const redeemedEvent = receipt.logs.find(
-    (log) => log.topics[0] === keccak256(toBytes("banknoteRedeemed(address,address,uint256,bytes32,uint32)"))
+    (log) =>
+      log.topics[0] ===
+      keccak256(
+        toBytes("banknoteRedeemed(address,address,uint256,bytes32,uint32)")
+      )
   ) as Log<bigint, number, false> | undefined;
-  
+
   if (redeemedEvent && redeemedEvent.data) {
-    const eventAbi = CONTRACT_ABI.find(item => item.name === "banknoteRedeemed");
+    const eventAbi = CONTRACT_ABI.find(
+      (item) => item.name === "banknoteRedeemed"
+    );
     if (!eventAbi || eventAbi.type !== "event") {
       throw new Error("banknoteRedeemed event not found in ABI");
     }
@@ -565,12 +590,12 @@ export async function getBanknoteInfo(
 }> {
   const { publicClient } = await getClients(provider);
 
-  const result = await publicClient.readContract({
+  const result = (await publicClient.readContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: "getBanknoteInfo",
     args: [banknoteId],
-  }) as [Address, Address, Address, number];
+  })) as [Address, Address, Address, number];
 
   return {
     minter: result[0],
@@ -580,8 +605,10 @@ export async function getBanknoteInfo(
   };
 }
 
-
-async function getTokenDecimals(provider: IProvider, tokenAddress: Address): Promise<number> {
+async function getTokenDecimals(
+  provider: IProvider,
+  tokenAddress: Address
+): Promise<number> {
   const { publicClient } = await getClients(provider);
 
   const decimals = await publicClient.readContract({
@@ -601,7 +628,10 @@ async function getTokenDecimals(provider: IProvider, tokenAddress: Address): Pro
   return Number(decimals);
 }
 
-export async function getTokenSymbol(provider: IProvider, tokenAddress: Address): Promise<string> {
+export async function getTokenSymbol(
+  provider: IProvider,
+  tokenAddress: Address
+): Promise<string> {
   const { publicClient } = await getClients(provider);
 
   const symbol = await publicClient.readContract({
@@ -670,12 +700,14 @@ export async function getAllTokenBalances(
 }> {
   const tokenAddresses = await getTokenAddresses();
 
-  const [ethBalance, usdcBalance, eurcBalance, nzdtBalance] = await Promise.all([
-    getTokenBalance(provider, userAddress, userAddress), // ETH balance
-    getTokenBalance(provider, userAddress, tokenAddresses.USDC),
-    getTokenBalance(provider, userAddress, tokenAddresses.EURC),
-    getTokenBalance(provider, userAddress, tokenAddresses.NZDT),
-  ]);
+  const [ethBalance, usdcBalance, eurcBalance, nzdtBalance] = await Promise.all(
+    [
+      getTokenBalance(provider, userAddress, userAddress), // ETH balance
+      getTokenBalance(provider, userAddress, tokenAddresses.USDC),
+      getTokenBalance(provider, userAddress, tokenAddresses.EURC),
+      getTokenBalance(provider, userAddress, tokenAddresses.NZDT),
+    ]
+  );
 
   return {
     ETH: ethBalance,
@@ -691,11 +723,11 @@ export async function getTokenAddresses(): Promise<{
   NZDT: Address;
   ETH: Address;
 }> {
-  return { 
+  return {
     USDC: USDC_ADDRESS,
     EURC: EURC_ADDRESS,
     NZDT: NZDT_ADDRESS,
-    ETH: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' as Address
+    ETH: "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" as Address,
   };
 }
 
@@ -703,14 +735,9 @@ export async function approveTokenSpending(
   provider: IProvider,
   tokenAddress: Address,
   amount: string
-): Promise<string | null> {
+): Promise<string> {
   const { publicClient, walletClient } = await getClients(provider);
   const [address] = await walletClient.getAddresses();
-
-  // If the token address is the same as the user's address, it's ETH and no approval is needed
-  if (tokenAddress === address) {
-    return null;
-  }
 
   const decimals = await getTokenDecimals(provider, tokenAddress);
   const parsedAmount = parseUnits(amount, decimals);

@@ -315,11 +315,8 @@ export default function Merchant() {
     switch (step) {
       case 1:
         return (
-          <div className="space-y-4">
-            <label
-              htmlFor="merchantKey"
-              className="block text-sm font-medium text-gray-700"
-            >
+          <div className="merchant-step">
+            <label htmlFor="merchantKey" className="merchant-label">
               {t.merchantIdLabel}
             </label>
             <input
@@ -327,13 +324,13 @@ export default function Merchant() {
               type="text"
               value={merchantPublicKey}
               onChange={(e) => setMerchantPublicKey(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              className="merchant-input"
               placeholder={t.merchantIdLabel}
             />
             <button
               onClick={() => setStep(2)}
               disabled={!merchantPublicKey}
-              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="merchant-button"
             >
               {t.next}
             </button>
@@ -341,19 +338,20 @@ export default function Merchant() {
         );
       case 2:
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Scan or Enter Private Key</h3>
+          <div className="merchant-step">
+            <h3 className="merchant-subtitle">Scan or Enter Private Key</h3>
+                    <div className="container2"></div>
             {cameraPermission === false && (
-              <p className="text-sm text-red-600">
+              <p className="merchant-error">
                 Please enable camera permissions to scan QR codes.
               </p>
+              
             )}
+            
             <QRScanner onScan={handleScan} onError={(err) => setError(err)} />
-            <div className="mt-4">
-              <label
-                htmlFor="manualBanknoteId"
-                className="block mt-2 text-sm font-medium text-gray-700"
-              >
+              <div className="container2"></div>
+            <div className="merchant-manual-input">
+              <label htmlFor="manualBanknoteId" className="merchant-label">
                 Enter banknote ID:
               </label>
               <input
@@ -361,74 +359,54 @@ export default function Merchant() {
                 id="manualBanknoteId"
                 value={manualBanknoteId}
                 onChange={(e) => setManualBanknoteId(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="merchant-input"
                 placeholder="Enter banknote ID"
               />
-              <button
-                onClick={handleManualRedeem}
-                className="mt-2 w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
+                   <div className="container2"></div>
+              <button onClick={handleManualRedeem} className="merchant-button">
                 Submit Private Key
               </button>
+              <div className="container2"></div>
             </div>
             {showConfirmation && (
-              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white p-4 rounded-lg">
-                  <p className="text-green-600 font-bold">
-                    Private Key Received!
-                  </p>
-                </div>
+              <div className="merchant-confirmation">
+                <p>Private Key Received!</p>
               </div>
             )}
             {scannedPrivateKey && (
-              <div className="flex items-center space-x-2">
+              <div className="merchant-scanned-info">
                 <span>Private Key Received</span>
-                <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
-                  <svg
-                    className="w-3 h-3 text-white"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path d="M5 13l4 4L19 7"></path>
-                  </svg>
-                </div>
+                <div className="merchant-check-icon"></div>
               </div>
             )}
             <button
               onClick={() => setStep(3)}
               disabled={!scannedPrivateKey}
-              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="merchant-button"
             >
               Review and Submit
             </button>
+            <div className="container2"></div>
           </div>
         );
       case 3:
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">
-              Review and Confirm Redemption
-            </h3>
-            <div className="bg-gray-100 p-4 rounded-md">
-              <div className="flex justify-between items-center mb-2">
+          <div className="merchant-step">
+            <h3 className="merchant-title">Review and Confirm Redemption</h3>
+            <div className="merchant-balance-info">
+              <div className="merchant-subtitle">
                 <span>USDC Balance</span>
                 <span>{scannedBalances.USDC}</span>
               </div>
-              <div className="flex justify-between items-center mb-2">
+              <div className="merchant-subtitle">
                 <span>EURC Balance</span>
                 <span>{scannedBalances.EURC}</span>
               </div>
             </div>
             <select
               value={selectedToken}
-              onChange={(e) =>
-                setSelectedToken(e.target.value as "USDC" | "EURC")
-              }
-              className="block w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+              onChange={(e) => setSelectedToken(e.target.value as "USDC" | "EURC")}
+              className="merchant-select"
             >
               <option value="USDC">USDC</option>
               <option value="EURC">EURC</option>
@@ -436,56 +414,47 @@ export default function Merchant() {
             <button
               onClick={handleRedeem}
               disabled={isLoading}
-              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="merchant-button merchant-button-redeem"
             >
               {isLoading ? "Processing..." : `Redeem ${selectedToken}`}
             </button>
+            <div className="container2"></div>
           </div>
         );
       case 4:
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-green-600">
-              {t.paymentComplete}
-            </h3>
+          <div className="merchant-step">
+            <h3 className="merchant-subtitle merchant-success">{t.paymentComplete}</h3>
             {currentTransaction && (
-              <div className="bg-green-50 border border-green-200 rounded-md p-4">
-                <h4 className="text-lg font-medium mb-2">Payment Receipt</h4>
-                <p className="text-sm text-green-800">
-                  {t.amount}: {currentTransaction.amount.toFixed(2)}{" "}
-                  {currentTransaction.tokenSymbol}
+              <div className="merchant-receipt">
+                <h4 className="merchant-receipt-title">Payment Receipt</h4>
+                <p className="merchant-receipt-info">
+                  {t.amount}: {currentTransaction.amount.toFixed(2)} {currentTransaction.tokenSymbol}
                 </p>
-                <p className="text-xs text-green-600">
+                <p className="merchant-receipt-info">
                   {t.transactionId}: {currentTransaction.txHash}
                 </p>
-                <p className="text-xs text-green-600">
-                  {t.date}:{" "}
-                  {new Date(currentTransaction.timestamp).toLocaleString()}
+                <p className="merchant-receipt-info">
+                  {t.date}: {new Date(currentTransaction.timestamp).toLocaleString()}
                 </p>
-                <p className="text-xs text-green-600">
+                <p className="merchant-receipt-info">
                   {t.merchantId}: {merchantPublicKey}
                 </p>
                 <a
                   href={`https://sepolia.etherscan.io/tx/${currentTransaction.txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-blue-600 hover:underline"
+                  className="merchant-etherscan-link"
                 >
                   View on Etherscan
                 </a>
               </div>
             )}
-            <div className="flex space-x-2">
-              <button
-                onClick={emailReceipt}
-                className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
+            <div className="merchant-action-buttons">
+              <button onClick={emailReceipt} className="merchant-button merchant-button-email">
                 {t.emailReceipt}
               </button>
-              <button
-                onClick={printReceipt}
-                className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-              >
+              <button onClick={printReceipt} className="merchant-button merchant-button-print">
                 {t.printReceipt}
               </button>
             </div>
@@ -495,10 +464,11 @@ export default function Merchant() {
                 setScannedPrivateKey("");
                 setCurrentTransaction(null);
               }}
-              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="merchant-button"
             >
               {t.newPayment}
             </button>
+            <div className="container2"></div>
           </div>
         );
       default:
@@ -507,39 +477,34 @@ export default function Merchant() {
   };
 
   const renderSettings = () => (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium">{t.settings}</h3>
-      <div>
-        <label
-          htmlFor="currency"
-          className="block text-sm font-medium text-gray-700"
-        >
+    <div className="merchant-settings">
+      <h3 className="merchant-title">{t.settings}</h3>
+      <div className="container2"></div>
+      <div className="merchant-setting-item">
+        <label htmlFor="currency" className="merchant-label">
           {t.currency}
         </label>
         <select
           id="currency"
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}
-          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+          className="merchant-select"
         >
           <option value="NZD">NZD</option>
-          <option value="EUR">USD</option>
+          <option value="USD">USD</option>
           <option value="EUR">EUR</option>
           <option value="GBP">GBP</option>
         </select>
       </div>
-      <div>
-        <label
-          htmlFor="language"
-          className="block text-sm font-medium text-gray-700"
-        >
+      <div className="merchant-setting-item">
+        <label htmlFor="language" className="merchant-label">
           {t.language}
         </label>
         <select
           id="language"
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
-          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+          className="merchant-select"
         >
           <option value="English">English</option>
           <option value="Spanish">Español</option>
@@ -551,80 +516,67 @@ export default function Merchant() {
           setShowCameraTest(true);
           setShowSettings(false);
         }}
-        className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        className="merchant-button"
       >
         {t.cameraTest}
       </button>
-      <button
-        onClick={() => setShowSettings(false)}
-        className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-      >
+      <div className="container2"></div>
+      <button onClick={() => setShowSettings(false)} className="merchant-button">
         {t.saveSettings}
       </button>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 sm:max-w-xl sm:mx-auto w-full px-4 sm:px-0">
-        <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-light-blue-500 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
-        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
-          <div className="max-w-md mx-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-xl font-semibold">
-                Skeuomorphia Merchant Terminal
-              </h1>
-              <button
-                onClick={() => {
-                  setShowSettings(!showSettings);
-                  setShowCameraTest(false);
-                }}
-                className="text-sm text-indigo-600 hover:text-indigo-500"
-              >
-                {showSettings || showCameraTest ? t.back : t.settings}
-              </button>
+    <div className="merchant-container">
+      <div className="merchant-content">
+        <div className="merchant-header">
+          <h1 className="merchant-title">Skeuomorphia Merchant Terminal</h1>
+          <button
+            onClick={() => {
+              setShowSettings(!showSettings);
+              setShowCameraTest(false);
+            }}
+            className="merchant-settings-toggle"
+          >
+            {showSettings || showCameraTest ? t.back : t.settings}
+          </button>
+        </div>
+
+        {showSettings ? (
+          renderSettings()
+        ) : showCameraTest ? (
+          <CameraTest />
+        ) : (
+          <>
+            <div className="merchant-steps">
+              <div className="merchant-step-indicators">
+                {[1, 2, 3, 4].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStep(s)}
+                    className={`merchant-step-indicator ${s === step ? "active" : ""}`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+              {renderStep()}
             </div>
 
-            {showSettings ? (
-              renderSettings()
-            ) : showCameraTest ? (
-              <CameraTest />
-            ) : (
-              <>
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    {[1, 2, 3, 4].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setStep(s)}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          s === step
-                            ? "bg-indigo-600 text-white"
-                            : "bg-gray-200 text-gray-600"
-                        } hover:bg-indigo-500 hover:text-white transition-colors duration-200`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                  {renderStep()}
-                </div>
-
-                {error && (
-                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                    <p className="text-sm text-red-600">{error}</p>
-                  </div>
-                )}
-
-                <TransactionHistory
-                  transactions={transactionHistory}
-                  language={language}
-                  currency={currency}
-                />
-              </>
+            {error && (
+              <div className="merchant-error">
+                <p>{error}</p>
+              </div>
             )}
-          </div>
-        </div>
+
+            <TransactionHistory
+              transactions={transactionHistory}
+              language={language}
+              currency={currency}
+            />
+          </>
+        )}
       </div>
     </div>
   );

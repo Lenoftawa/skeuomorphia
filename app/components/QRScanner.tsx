@@ -108,6 +108,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError }) => {
           </option>
         ))}
       </select>
+      <div className="container2"></div>
       <div 
         id="reader" 
         ref={readerRef}

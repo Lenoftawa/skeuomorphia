@@ -32,30 +32,3 @@ export enum ActionEnum {
   NONE,
   GO_TRANSFER
 }
-
-// export enum ActionEnum {
-//     NO_ACTION = 0,
-//     PROCESS_LOGIN = 18,
-//     // Main Menu
-//     PROCESS_LOGOUT = 28,
-//     PROCESS_DEPOSIT = 27,
-//     PROCESS_CURRENCIES = 22,
-//     PROCESS_BALANCE = 21,
-//     PROCESS_BANKS = 24,
-//     PROCESS_STATEMENT = 25,
-//     PROCESS_INVEST = 26,
-//     GO_WITHDRAW_MENU = 23,
-//     // Withdraw
-//     PROCESS_WITHDRAW_1 = 31,
-//     PROCESS_WITHDRAW_5 = 35,
-//     PROCESS_WITHDRAW_10 = 32,
-//     PROCESS_WITHDRAW_20 = 36,
-//     PROCESS_WITHDRAW_50 = 33,
-//     PROCESS_WITHDRAW_100 = 37,
-//     EXECUTE_WITHDRAW = 34,
-//     CANCEL_WITHDRAW = 38,
-
-//     GO_CURRENCY_MENU = 41,
-//     GO_MAIN_MENU = 42,
-//     GO_BANK_MENU = 43,
-// }

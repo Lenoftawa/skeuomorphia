@@ -1,28 +1,48 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { Terminal, CreditCard, ShoppingBag } from "lucide-react";
 
-const LandingPage: React.FC = () => {
+const LandingPage = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg text-center">
-        <h1 className="text-4xl font-bold mb-6">Welcome to Web3 ATM</h1>
-        <p className="text-xl mb-8">Choose your role:</p>
-        <div className="flex justify-center space-x-4">
-          <Link
-            href="/atm"
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300"
-          >
-            Payer (ATM User)
-          </Link>
-          <Link
-            href="/redeem"
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-300"
-          >
-            Payee (Merchant)
-          </Link>
+    <>
+      <div className="landing-background">
+        <div className="retro-container">
+          <div className="retro-screen">
+            <div className="retro-screen-content">
+              <h1 className="retro-title glitch-text">Skeuomorphia Bank</h1>
+              {/* <img
+                src="/skeuomorphia.png"
+                alt="CyberBank Logo"
+                className="retro-logo"
+                width={200}
+                height={100}
+              /> */}
+              <Terminal className="retro-icon" />
+              <p className="retro-text typewriter-text">
+                Select Your Operation:
+              </p>
+              <div className="retro-button-container">
+                <Link href="/atm" className="retro-button">
+                  <CreditCard className="retro-button-icon" />
+                  ATM User
+                </Link>
+                <Link href="/redeem" className="retro-button">
+                  <ShoppingBag className="retro-button-icon" />
+                  Redeem
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
+        <div className="scan-line"></div>
       </div>
-    </div>
+    </>
   );
 };
 
