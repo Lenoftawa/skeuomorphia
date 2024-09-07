@@ -97,3 +97,7 @@ Notes are printed (to PDF) with a QR code, which is a secret that mujst be used 
 The merchant calls the redeem function with secret + amount
 Contract checks secret, destroys the note, returns (dedmonimation - amount) to user 
 
+### Contracts
+
+vault sep eth testnet: 0xbf26b234f3e48b32cfdad055b31a99c19cb45557
+nzdt sep eth testnet: 0xaB0e2aEF0d236E0754E79eD34380a0Ec9700fE02

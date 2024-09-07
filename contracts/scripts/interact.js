@@ -1,95 +1,199 @@
-// scripts/interact.js
 const { ethers } = require("hardhat");
 const fs = require('fs');
 
-// Setup logging
-const logFile = 'interaction_log.txt';
-function log(message) {
-  const timestamp = new Date().toISOString();
-  const logMessage = `${timestamp}: ${message}\n`;
-  console.log(logMessage);
-  fs.appendFileSync(logFile, logMessage);
+async function getTokenDecimals(token) {
+  try {
+    return await token.decimals();
+  } catch (error) {
+    console.log("Token doesn't have a decimals function, defaulting to 18");
+    return 18;
+  }
+}
+
+async function mintAndRedeemBanknote(vault, token, tokenName, denomination, signer) {
+  console.log(`\nTesting with ${tokenName}:`);
+  console.log(`Denomination: ${denomination} ${tokenName}`);
+
+  try {
+    const decimals = await getTokenDecimals(token);
+    
+    // 1. Check signer's token balance
+    const signerBalance = await token.balanceOf(signer.address);
+    console.log(`Signer ${tokenName} balance: ${ethers.utils.formatUnits(signerBalance, decimals)} ${tokenName}`);
+
+    const amount = ethers.utils.parseUnits(denomination.toString(), decimals);
+
+    if (signerBalance.lt(amount)) {
+      console.log(`Insufficient ${tokenName} balance. Skipping.`);
+      return;
+    }
+
+    // 2. Approve spending
+    console.log(`Approving ${tokenName} spending...`);
+    const approveTx = await token.connect(signer).approve(vault.address, amount.mul(2));
+    await approveTx.wait();
+    console.log(`Approved ${tokenName} spending`);
+
+    // 3. Mint banknote
+    console.log("Minting banknote...");
+    const banknoteWallet = ethers.Wallet.createRandom();
+    const mintTx = await vault.connect(signer).mintBanknote(
+      token.address,
+      banknoteWallet.address,
+      denomination,
+      { gasLimit: 500000 }
+    );
+
+    const mintReceipt = await mintTx.wait();
+    console.log("Banknote minted:", mintReceipt.transactionHash);
+
+    const banknoteEvent = mintReceipt.events.find(e => e.event === 'banknoteMinted');
+    const banknoteId = banknoteEvent.args.id;
+
+    // 4. Display banknote details
+    console.log(`Minted banknote with ID ${banknoteId}`);
+    console.log(`Banknote Private Key: ${banknoteWallet.privateKey}`);
+    console.log(`Banknote Public Address: ${banknoteWallet.address}`);
+
+    const banknoteInfo = await vault.getBanknoteInfo(banknoteId);
+    console.log("Banknote info:", banknoteInfo);
+
+    // 5. Redeem banknote
+    console.log("Redeeming banknote...");
+    const redeemAmount = amount;
+    const signature = await banknoteWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [signer.address]))));
+    const description = ethers.utils.formatBytes32String("Test redemption");
+
+    const redeemTx = await vault.connect(signer).redeemBanknote(
+      banknoteId,
+      redeemAmount,
+      signature,
+      description,
+      { gasLimit: 500000 }
+    );
+    const redeemReceipt = await redeemTx.wait();
+    console.log("Banknote redeemed:", redeemReceipt.transactionHash);
+
+    // 6. Check final balances and surplus
+    const finalSignerBalance = await token.balanceOf(signer.address);
+    const surplusBalance = await vault.getSurplus(signer.address, token.address);
+
+    console.log(`Final Signer ${tokenName} balance: ${ethers.utils.formatUnits(finalSignerBalance, decimals)} ${tokenName}`);
+    console.log(`Surplus ${tokenName} balance: ${ethers.utils.formatUnits(surplusBalance, decimals)} ${tokenName}`);
+
+    // Skim surplus
+    if (surplusBalance.gt(0)) {
+      console.log("Skimming surplus...");
+      const skimTx = await vault.connect(signer).skimSurplus(token.address, 0);
+      await skimTx.wait();
+      console.log("Surplus skimmed");
+    }
+  } catch (error) {
+    console.error(`Error with ${tokenName}:`, error.message);
+    if (error.reason) console.error("Reason:", error.reason);
+    if (error.data) console.error("Error data:", error.data);
+  }
 }
 
 async function main() {
+  const [signer] = await ethers.getSigners();
+  console.log("Using account:", signer.address);
+
+  const addresses = JSON.parse(fs.readFileSync("deployed-addresses.json"));
+  const vaultAddress = addresses.vault;
+  console.log("Using vault contract at:", vaultAddress);
+
+  const BanknoteCollateralVault = await ethers.getContractFactory("BanknoteCollateralVault");
+  const vault = BanknoteCollateralVault.attach(vaultAddress);
+
+  // ERC20 tokens
+  const tokens = [
+    { address: addresses.usdc, name: "USDC", denomination: 2 },
+    { address: addresses.eurc, name: "EURC", denomination: 2 },
+    { address: addresses.nzdt, name: "NZDT", denomination: 2 }
+  ];
+
+  for (const tokenInfo of tokens) {
+    const token = await ethers.getContractAt("IERC20", tokenInfo.address);
+    await mintAndRedeemBanknote(vault, token, tokenInfo.name, tokenInfo.denomination, signer);
+  }
+
+  // ETH
+  console.log("\nTesting with ETH:");
+  const ethDenomination = 2; // Using 2 as denomination for consistency with ERC20 tokens
+  console.log(`Denomination: ${ethDenomination} ETH`);
+
   try {
-    const [signer, addr1] = await ethers.getSigners();
+    const signerBalance = await signer.getBalance();
+    console.log(`Signer ETH balance: ${ethers.utils.formatEther(signerBalance)} ETH`);
 
-    log(`Using signer address: ${signer.address}`);
+    const ethAmount = ethers.utils.parseEther(ethDenomination.toString());
 
-    // Load contract addresses
-    const nzDollarAddress = ""; // Add the deployed NZDollar address here
-    const vaultAddress = ""; // Add the deployed BanknoteCollateralVault address here
-
-    if (!nzDollarAddress || !vaultAddress) {
-      throw new Error("Contract addresses not set");
+    if (signerBalance.lt(ethAmount)) {
+      console.log("Insufficient ETH balance. Skipping.");
+      return;
     }
 
-    const NZDollar = await ethers.getContractFactory("NZDollar");
-    const nzDollar = NZDollar.attach(nzDollarAddress);
+    console.log("Minting ETH banknote...");
+    const banknoteWallet = ethers.Wallet.createRandom();
+    const mintTx = await vault.connect(signer).mintBanknote(
+      ethers.constants.AddressZero,
+      banknoteWallet.address,
+      ethDenomination,
+      { value: ethAmount, gasLimit: 500000 }
+    );
 
-    const BanknoteCollateralVault = await ethers.getContractFactory("BanknoteCollateralVault");
-    const vault = BanknoteCollateralVault.attach(vaultAddress);
-
-    log("Contracts loaded successfully");
-
-    // Approve vault to spend NZDollar
-    const approveAmount = ethers.utils.parseEther("1000");
-    const approveTx = await nzDollar.approve(vaultAddress, approveAmount);
-    await approveTx.wait();
-    log(`Approved vault to spend ${ethers.utils.formatEther(approveAmount)} NZDollar`);
-
-    // Mint a banknote
-    const denomination = 100;
-    const secret = ethers.utils.randomBytes(32);
-    const hashedSecret = ethers.utils.keccak256(secret);
-    const mintTx = await vault.mintBanknote(nzDollarAddress, hashedSecret, denomination);
     const mintReceipt = await mintTx.wait();
-    const banknoteId = mintReceipt.events.find(e => e.event === 'banknoteMinted').args.id;
-    log(`Minted banknote with ID ${banknoteId}, denomination ${denomination}, transaction hash: ${mintReceipt.transactionHash}`);
+    console.log("ETH Banknote minted:", mintReceipt.transactionHash);
 
-    // Get banknote info
+    const banknoteEvent = mintReceipt.events.find(e => e.event === 'banknoteMinted');
+    const banknoteId = banknoteEvent.args.id;
+
+    console.log(`Minted ETH banknote with ID ${banknoteId}`);
+    console.log(`Banknote Private Key: ${banknoteWallet.privateKey}`);
+    console.log(`Banknote Public Address: ${banknoteWallet.address}`);
+
     const banknoteInfo = await vault.getBanknoteInfo(banknoteId);
-    log(`Banknote info: Minter: ${banknoteInfo[0]}, HashedSecret: ${banknoteInfo[1]}, ERC20: ${banknoteInfo[2]}, Denomination: ${banknoteInfo[3]}`);
+    console.log("ETH Banknote info:", banknoteInfo);
 
-    // Redeem partial amount of the banknote
-    const redeemAmount = ethers.utils.parseEther("50");
-    const discount = ethers.utils.parseEther("1");
-    const hash2 = ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(["bytes32", "address"], [hashedSecret, addr1.address]));
-    
-    const redeemTx = await vault.connect(addr1).redeemBanknote(banknoteId, redeemAmount, hash2, discount);
+    // Redeem ETH banknote
+    console.log("Redeeming ETH banknote...");
+    const signature = await banknoteWallet.signMessage(ethers.utils.arrayify(ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode(['address'], [signer.address]))));
+    const description = ethers.utils.formatBytes32String("Test ETH redemption");
+
+    const redeemTx = await vault.connect(signer).redeemBanknote(
+      banknoteId,
+      ethAmount,
+      signature,
+      description,
+      { gasLimit: 500000 }
+    );
     const redeemReceipt = await redeemTx.wait();
-    log(`Redeemed ${ethers.utils.formatEther(redeemAmount)} from banknote ${banknoteId}, transaction hash: ${redeemReceipt.transactionHash}`);
+    console.log("ETH Banknote redeemed:", redeemReceipt.transactionHash);
 
-    // Check surplus funds
-    const surplusFunds = await vault.getSurplus(signer.address, nzDollarAddress);
-    log(`Surplus funds for signer: ${ethers.utils.formatEther(surplusFunds)} NZDollar`);
+    const finalSignerBalance = await signer.getBalance();
+    const surplusBalance = await vault.getSurplus(signer.address, ethers.constants.AddressZero);
 
-    // Skim surplus funds
-    if (surplusFunds.gt(0)) {
-      const skimTx = await vault.skimSurplus(nzDollarAddress, surplusFunds);
-      const skimReceipt = await skimTx.wait();
-      log(`Skimmed ${ethers.utils.formatEther(surplusFunds)} NZDollar, transaction hash: ${skimReceipt.transactionHash}`);
-    } else {
-      log("No surplus funds to skim");
+    console.log(`Final Signer ETH balance: ${ethers.utils.formatEther(finalSignerBalance)} ETH`);
+    console.log(`Surplus ETH balance: ${ethers.utils.formatEther(surplusBalance)} ETH`);
+
+    // Skim surplus
+    if (surplusBalance.gt(0)) {
+      console.log("Skimming ETH surplus...");
+      const skimTx = await vault.connect(signer).skimSurplus(ethers.constants.AddressZero, 0);
+      await skimTx.wait();
+      console.log("ETH Surplus skimmed");
     }
-
-    // Final balance check
-    const finalBalance = await nzDollar.balanceOf(signer.address);
-    log(`Final NZDollar balance of signer: ${ethers.utils.formatEther(finalBalance)}`);
-
   } catch (error) {
-    log(`Error: ${error.message}`);
-    if (error.reason) log(`Reason: ${error.reason}`);
-    if (error.code) log(`Code: ${error.code}`);
-    if (error.transaction) log(`Transaction: ${JSON.stringify(error.transaction)}`);
-    process.exit(1);
+    console.error("Error with ETH:", error.message);
+    if (error.reason) console.error("Reason:", error.reason);
+    if (error.data) console.error("Error data:", error.data);
   }
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    log(`Unhandled Error: ${error.message}`);
+    console.error(error);
     process.exit(1);
   });

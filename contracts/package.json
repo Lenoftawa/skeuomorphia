@@ -4,17 +4,18 @@
     "description": "Smart contracts for banknote collateral vault",
     "main": "index.js",
     "scripts": {
-      "test": "npx hardhat test",
-      "deploy": "npx hardhat run scripts/deploy.js --network hedera",
-      "run": "npx hardhat run scripts/interact.js --network hedera"
+        "test": "npx hardhat test",
+        "deploy": "npx hardhat run scripts/deploy.js --network hedera",
+        "run": "npx hardhat run scripts/interact.js --network hedera"
     },
     "devDependencies": {
-      "@nomicfoundation/hardhat-toolbox": "^2.0.0",
-      "dotenv": "^16.0.3",
-      "hardhat": "^2.14.0"
+        "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+        "dotenv": "^16.4.5",
+        "hardhat": "^2.22.10"
     },
     "dependencies": {
-      "@hashgraph/sdk": "^2.19.2",
-      "@openzeppelin/contracts": "^4.8.0"
+        "@chainlink/contracts": "^1.2.0",
+        "@hashgraph/sdk": "^2.19.2",
+        "@openzeppelin/contracts": "^4.8.0"
     }
-  }
+}

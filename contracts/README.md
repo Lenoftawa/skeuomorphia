@@ -91,10 +91,12 @@ Run the tests:
 Deploy the contracts to Hedera testnet:
 
 `npx hardhat run scripts/deploy.js --network hedera`
+`npx hardhat run scripts/deploy.js --network sepolia`
 
 Interact with the deployed contracts:
 
 `npx hardhat run scripts/interact.js --network hedera`
+`npx hardhat run scripts/interact.js --network sepolia`
 
 Replace the placeholder contract addresses (nzDollarAddress and vaultAddress) with your actual deployed contract addresses.
 
@@ -117,3 +119,26 @@ Access Your Testnet Account:
 Use the Hedera Token Service (HTS) instead of the custom ERC20 token for better integration with Hedera's native features.
 
 Use the Hedera Consensus Service (HCS) for additional features like timestamping or audit trails.
+
+
+vault sep eth testnet: 0xbf26b234f3e48b32cfdad055b31a99c19cb45557
+nzdt sep eth testnet: 0xaB0e2aEF0d236E0754E79eD34380a0Ec9700fE02
+
+alt nzdt sep eth: 0x42EBbDEB6Da974688E9aADCdAEca707903819dCF
+mock usdc sep eth: 0x4BE07C0892B67070dc26d3382aD153b546013AB6
+mock eurc sep eth: 0x43db875d0397B43F129C67EA85DBA7B2dD55d1cD
+
+new (9/7) vault sep eth testnet: 0xf2432ad28c2242581439978ec53843ad16693531
+
+
+minter:
+
+priv: 0xE6d6F4a7857f0C9ED735397e9bbA36f093752872
+
+pk: e6910ac208dad070b17d8460e404ee1be9bf35c8825a0276488ba904548c1197
+
+redeemer:
+
+pub: 0xf49bb7a00B406F2870c76135CF21bf111954fCf4
+
+pk: 9910be605dda641b1d0fc482a8b7c0e2eb274ad2cebdbbd37dc477d880425430

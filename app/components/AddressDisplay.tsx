@@ -1,14 +1,47 @@
 import React from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface AddressDisplayProps {
-    address: string;
+  address: string;
+  balances: {
+    ETH: string;
+    USDC: string;
+    EURC: string;
+    NZDT: string;
+  };
+  currentToken: string;
+  onTokenChange: (token: string) => void;
 }
 
-const AddressDisplay: React.FC<AddressDisplayProps> = ({ address }) => {
-    if (!address) return null;
-    const addressStr = String(address);
-    const displayAddress = `${addressStr.substring(0, 5)}...${addressStr.substring(addressStr.length - 5)}`;
-    return <p>{displayAddress}</p>;
+const AddressDisplay: React.FC<AddressDisplayProps> = ({ address, balances, currentToken, onTokenChange }) => {
+  const tokens = ['ETH', 'USDC', 'EURC', 'NZDT'];
+
+  const cycleToken = (direction: 'next' | 'prev') => {
+    const currentIndex = tokens.indexOf(currentToken);
+    const newIndex = direction === 'next'
+      ? (currentIndex + 1) % tokens.length
+      : (currentIndex - 1 + tokens.length) % tokens.length;
+    onTokenChange(tokens[newIndex]);
+  };
+
+  const formatBalance = (balance: string) => {
+    const [amount, symbol] = balance.split(' ');
+    const num = parseFloat(amount);
+    return `${num.toFixed(symbol === 'ETH' ? 5 : 2)} ${symbol}`;
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '24px' }}>
+      <span>{address}</span>
+      <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+        <ChevronLeft onClick={() => cycleToken('prev')} style={{ cursor: 'pointer' }} />
+        <span style={{ margin: '0 10px' }}>
+          {formatBalance(balances[currentToken as keyof typeof balances])}
+        </span>
+        <ChevronRight onClick={() => cycleToken('next')} style={{ cursor: 'pointer' }} />
+      </div>
+    </div>
+  );
 };
 
 export default AddressDisplay;
