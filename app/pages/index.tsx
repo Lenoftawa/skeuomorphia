@@ -1,15 +1,6 @@
 import React from 'react';
-import AtmNew from '@/components/ATM/AtmNew';
-import Merchant from "@/components/Merchant";
+import LandingPage from '@/components/LandingPage';
 
 export default function Home() {
-  return (
-    <div className="image-container">
-      <AtmNew />
-    </div>
-
-        // <div>
-    //   <Merchant />
-    // </div>
-  );
+  return <LandingPage />;
 }

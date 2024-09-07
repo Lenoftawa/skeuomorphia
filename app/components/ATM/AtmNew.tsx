@@ -1,11 +1,20 @@
-"use client";
-
-import React, { useState, useEffect } from "react";
-import { Web3Auth } from "@web3auth/modal";
-import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK } from "@web3auth/base";
-import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
-import RPC from "../../data/viemRPC";
-import jsPDF from "jspdf";
+import React, { useState, useEffect, useCallback } from "react";
+import { useWeb3Auth } from "../../hooks/useWeb3Auth";
+import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
+import { Copy } from "lucide-react";
+import AddressDisplay from "../../components/AddressDisplay";
+import AnimatedRetroLogo from "../AnimatedRetroLogo";
+import {
+  mintBanknote,
+  getBanknoteInfo,
+  getTokenBalance,
+  getAllTokenBalances,
+  getTokenAddresses,
+  approveTokenSpending,
+  web3auth,
+  getTokenSymbol,
+} from "../../utils/web3";
 import {
   screenDisconnected,
   screenMainMenu,
@@ -20,184 +29,118 @@ import {
   screenCurrencies,
   screenSettings,
 } from "../../data/menus";
+import { Address } from "viem";
 import { Screen } from "../../data/interfaces";
 import { ActionEnum } from "../../data/action-enums";
-import AddressDisplay from "../../components/AddressDisplay";
-import { printBanknote } from "../../utils/printPDF";
-import { Copy } from "lucide-react";
-import AnimatedRetroLogo from "../AnimatedRetroLogo";
-import { ethers } from "ethers";
-import {
-  mintBanknote,
-  redeemBanknote,
-  skimSurplus,
-  getBanknoteInfo,
-  getSurplus,
-  getNextId,
-  getTokenBalance,
-  getTokenAddresses,
-  approveTokenSpending,
-} from "../../utils/web3";
 
-const clientId = process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID || "";
-
-const chainConfig = {
-  chainNamespace: CHAIN_NAMESPACES.EIP155,
-  chainId: "0xaa36a7",
-  rpcTarget: "https://rpc.ankr.com/eth_sepolia",
-  displayName: "Ethereum Sepolia Testnet",
-  blockExplorerUrl: "https://sepolia.etherscan.io",
-  ticker: "ETH",
-  tickerName: "Ethereum",
-};
-
-const privateKeyProvider = new EthereumPrivateKeyProvider({
-  config: { chainConfig },
-});
-
-const web3auth = new Web3Auth({
-  clientId,
-  web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
-  privateKeyProvider,
-});
-
-export default function AtmNew() {
+export default function ATM() {
+  const { isLoggedIn, address, balance, login, logout } = useWeb3Auth();
   const [screen, setScreen] = useState<Screen>(screenDisconnected);
   const [messageTop, setMessageTop] = useState<string>("");
   const [messageBottom, setMessageBottom] = useState<string>("");
   const [amount, setAmount] = useState<number>(0);
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [address, setAddress] = useState<string>("");
-  const [balance, setBalance] = useState<string>("");
-  const [usdcBalance, setUsdcBalance] = useState<string>("");
-  const [eurcBalance, setEurcBalance] = useState<string>("");
-  const [tokenAddresses, setTokenAddresses] = useState<{
-    USDC: string;
-    EURC: string;
-  }>({ USDC: "", EURC: "" });
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [mintedBanknotes, setMintedBanknotes] = useState<
     Array<{ id: number; denomination: number; tokenSymbol: string }>
   >([]);
+  const [balances, setBalances] = useState<{
+    ETH: string;
+    USDC: string;
+    EURC: string;
+    NZDT: string;
+  }>({
+    ETH: "0",
+    USDC: "0",
+    EURC: "0",
+    NZDT: "0",
+  });
+  const [currentToken, setCurrentToken] = useState<string>("ETH");
+  const [tokenAddresses, setTokenAddresses] = useState<{
+    USDC: Address;
+    EURC: Address;
+    NZDT: Address;
+    ETH: Address;
+  }>({
+    USDC: "0x" as Address,
+    EURC: "0x" as Address,
+    NZDT: "0x" as Address,
+    ETH: "0x" as Address,
+  });
 
   useEffect(() => {
     const init = async () => {
-      try {
-        await web3auth.initModal();
-        if (web3auth.connected) {
-          setLoggedIn(true);
-          await getUserInfo();
-          await getAccounts();
-          await getBalance();
-          await getTokenBalances();
-          await fetchTokenAddresses();
-          setScreen(screenMainMenu);
-        }
-      } catch (error) {
-        console.error(error);
+      if (isLoggedIn && address) {
+        setIsLoading(true);
+        await fetchTokenAddresses();
+        await getTokenBalances();
+        setScreen(screenMainMenu);
+        setIsLoading(false);
       }
     };
-
     init();
-  }, []);
-
-  const login = async () => {
-    try {
-      await web3auth.connect();
-      setLoggedIn(true);
-      await getUserInfo();
-      await getAccounts();
-      await getBalance();
-      setScreen(screenMainMenu);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const logout = async () => {
-    await web3auth.logout();
-    setLoggedIn(false);
-    setAddress("");
-    setBalance("");
-    setScreen(screenDisconnected);
-    setMessageTop("");
-    setMessageBottom("");
-  };
-
-  const getUserInfo = async () => {
-    const user = await web3auth.getUserInfo();
-    console.log(user);
-  };
-
-  const getAccounts = async () => {
-    if (!web3auth.provider) {
-      console.log("provider not initialized yet");
-      return;
-    }
-    const address = await RPC.getAccounts(web3auth.provider);
-    setAddress(address);
-  };
-
-  const getBalance = async () => {
-    if (!web3auth.provider) {
-      console.log("provider not initialized yet");
-      return;
-    }
-    const balance = await RPC.getBalance(web3auth.provider);
-    setBalance(balance);
-  };
-
-  const getTokenBalances = async () => {
-    if (!address) return;
-    const { USDC, EURC } = await getTokenAddresses();
-    const usdcBalance = await getTokenBalance(address, USDC);
-    const eurcBalance = await getTokenBalance(address, EURC);
-    setUsdcBalance(usdcBalance);
-    setEurcBalance(eurcBalance);
-  };
+  }, [isLoggedIn, address]);
 
   const fetchTokenAddresses = async () => {
     const addresses = await getTokenAddresses();
     setTokenAddresses(addresses);
   };
 
+  const getTokenBalances = async () => {
+    if (!address || !web3auth.provider) return;
+    try {
+      const allBalances = await getAllTokenBalances(
+        web3auth.provider,
+        address as Address
+      );
+      setBalances(allBalances);
+    } catch (error) {
+      console.error("Error fetching token balances:", error);
+      setMessageTop("Failed to fetch token balances. Please try again.");
+    }
+  };
+
+  const handleTokenChange = (token: string) => {
+    setCurrentToken(token);
+  };
+
   const handleMintBanknote = async (
     denomination: number,
-    tokenSymbol: "USDC" | "EURC"
+    tokenSymbol: "USDC" | "EURC" | "NZDT" | "ETH"
   ) => {
-    try {
-      const tokenAddress =
-        tokenSymbol === "USDC" ? tokenAddresses.USDC : tokenAddresses.EURC;
-      const amount = ethers.parseUnits(denomination.toString(), 6); // Assuming 6 decimals for both USDC and EURC
+    if (!web3auth.provider || !address) {
+      setMessageTop("Please connect your wallet first.");
+      return;
+    }
 
-      // Step 1: Approve spending
+    try {
+      const tokenAddress = tokenAddresses[tokenSymbol];
+      const amount = denomination.toString();
+
       setMessageTop(`Approving ${tokenSymbol} spending...`);
       const approvalTx = await approveTokenSpending(
+        web3auth.provider,
         tokenAddress,
-        amount.toString()
+        amount
       );
       console.log(
         `${tokenSymbol} spending approved. Transaction: ${approvalTx}`
       );
 
-      // Step 2: Mint banknote
       setMessageTop(`Minting ${denomination} ${tokenSymbol} banknote...`);
-      const wallet = ethers.Wallet.createRandom();
       const { txHash, id } = await mintBanknote(
+        web3auth.provider,
         tokenAddress,
-        wallet.address,
         denomination
       );
       console.log(`Banknote minted with ID: ${id}, Transaction: ${txHash}`);
 
-      // Step 3: Generate and save PDF
       await generateAndSaveBanknotePDF(
         denomination,
         tokenSymbol,
         id,
-        wallet.privateKey
+        "Private key not available" // You might want to handle this differently
       );
 
-      // Update minted banknotes list
       setMintedBanknotes((prevBanknotes) => [
         ...prevBanknotes,
         { id, denomination, tokenSymbol },
@@ -205,7 +148,7 @@ export default function AtmNew() {
 
       setScreen(screenMainMenu);
       setMessageTop(`Banknote minted successfully: ID ${id}`);
-      await getTokenBalances(); // Refresh token balances
+      await getTokenBalances();
     } catch (error) {
       console.error("Error minting banknote:", error);
       setMessageTop("Error minting banknote. Please try again.");
@@ -220,18 +163,29 @@ export default function AtmNew() {
   ) => {
     const doc = new jsPDF();
 
-    doc.setFontSize(16);
-    doc.text("Banknote Details", 10, 10);
+    // Add background image
+    const img = new Image();
+    img.src = "/banknote_1.png";
+    doc.addImage(img, "PNG", 0, 0, 210, 297);
 
-    doc.setFontSize(12);
-    doc.text(`Denomination: ${denomination} ${tokenSymbol}`, 10, 20);
-    doc.text(`ID: ${id}`, 10, 30);
-    doc.text(`Private Key: ${privateKey}`, 10, 40);
+    // Add denomination and token name
+    doc.setFontSize(24);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`${denomination} ${tokenSymbol}`, 150, 50);
 
+    // Add banknote ID
+    doc.setFontSize(14);
+    doc.text(`Banknote ID: ${id}`, 150, 70);
+
+    // Generate QR code for private key
+    const qr = await QRCode.toDataURL(privateKey);
+    doc.addImage(qr, "PNG", 150, 90, 40, 40);
+
+    // Add private key text
     doc.setFontSize(10);
-    doc.text("IMPORTANT: Keep this information secret and safe.", 10, 60);
-    doc.text("You'll need the private key to redeem the banknote.", 10, 70);
+    doc.text(`Private Key: ${privateKey}`, 150, 140, { maxWidth: 50 });
 
+    // Save the PDF
     doc.save(`banknote_${id}.pdf`);
   };
 
@@ -240,11 +194,20 @@ export default function AtmNew() {
   };
 
   const handlePrintBanknote = async (id: number) => {
+    if (!web3auth.provider) {
+      setMessageTop("Please connect your wallet first.");
+      return;
+    }
+
     try {
-      const banknoteInfo = await getBanknoteInfo(id);
+      const banknoteInfo = await getBanknoteInfo(web3auth.provider, id);
+      const tokenSymbol = await getTokenSymbol(
+        web3auth.provider,
+        banknoteInfo.erc20 as Address
+      );
       await generateAndSaveBanknotePDF(
         banknoteInfo.denomination,
-        banknoteInfo.tokenSymbol,
+        tokenSymbol,
         id,
         "Private key not available"
       );
@@ -255,54 +218,8 @@ export default function AtmNew() {
     }
   };
 
-  const handleRedeemBanknote = async (
-    banknoteId: number,
-    amount: string,
-    privateKey: string
-  ) => {
-    try {
-      const wallet = new ethers.Wallet(privateKey);
-      const messageHash = ethers.keccak256(ethers.toUtf8Bytes(address));
-      const messageHashBytes = ethers.getBytes(messageHash);
-      const signature = await wallet.signMessage(messageHashBytes);
-
-      const {
-        txHash,
-        amount: redeemedAmount,
-        tokenSymbol,
-      } = await redeemBanknote(banknoteId, amount, signature, "0");
-      console.log(
-        `Banknote redeemed. Amount: ${redeemedAmount} ${tokenSymbol}, Transaction: ${txHash}`
-      );
-      setScreen(screenMainMenu);
-      setMessageTop(`Redeemed ${redeemedAmount} ${tokenSymbol}`);
-      await getTokenBalances(); // Refresh token balances
-    } catch (error) {
-      console.error("Error redeeming banknote:", error);
-      setMessageTop("Error redeeming banknote. Please try again.");
-    }
-  };
-
-  const handleSkimSurplus = async () => {
-    try {
-      const { txHash, amount } = await skimSurplus(
-        tokenAddresses.USDC,
-        ethers.parseUnits("0", 6).toString()
-      );
-      console.log(
-        `Surplus skimmed. Amount: ${amount} USDC, Transaction: ${txHash}`
-      );
-      setScreen(screenMainMenu);
-      setMessageTop(`Skimmed ${amount} USDC`);
-      await getTokenBalances(); // Refresh token balances
-    } catch (error) {
-      console.error("Error skimming surplus:", error);
-      setMessageTop("Error skimming surplus. Please try again.");
-    }
-  };
-
-  const handleButtonClick = async (action: number) => {
-    console.log("** " + action + " **");
+  const handleButtonClick = async (action: ActionEnum) => {
+    console.log("Action:", action);
 
     switch (action) {
       case ActionEnum.PROCESS_LOGIN:
@@ -310,6 +227,7 @@ export default function AtmNew() {
         break;
       case ActionEnum.PROCESS_LOGOUT:
         await logout();
+        setScreen(screenDisconnected);
         break;
       case ActionEnum.GO_WITHDRAW_MENU:
         setScreen(screenWithdrawMenu);
@@ -356,24 +274,27 @@ export default function AtmNew() {
         ];
         setAmount(withdrawAmount);
         setScreen(screenConfirm);
-        setMessageTop(`Printing a note for ${withdrawAmount} NZDT`);
+        setMessageTop(`Printing a note for ${withdrawAmount} ${currentToken}`);
         break;
       case ActionEnum.MINT_USDC:
-        await handleMintBanknote(amount, "USDC");
-        break;
       case ActionEnum.MINT_EURC:
-        await handleMintBanknote(amount, "EURC");
+      case ActionEnum.MINT_NZDT:
+      case ActionEnum.MINT_ETH:
+        const tokenSymbol = ["USDC", "EURC", "NZDT", "ETH"][
+          action - ActionEnum.MINT_USDC
+        ] as "USDC" | "EURC" | "NZDT" | "ETH";
+        await handleMintBanknote(amount, tokenSymbol);
         break;
       case ActionEnum.EXECUTE_WITHDRAW:
-        console.log("Withdraw : " + amount);
-        // Here you would integrate with the smart contract to mint the banknote
-        // For now, we'll just simulate printing
-        await handleMintBanknote(amount, "USDC");
+        console.log("Withdraw:", amount);
+        await handleMintBanknote(
+          amount,
+          currentToken as "USDC" | "EURC" | "NZDT" | "ETH"
+        );
         setScreen(screenMainMenu);
         setAmount(0);
         setMessageTop("");
         break;
-
       case ActionEnum.CANCEL_WITHDRAW:
         setScreen(screenMainMenu);
         setAmount(0);
@@ -383,13 +304,10 @@ export default function AtmNew() {
         handleViewBanknotes();
         break;
       case ActionEnum.PRINT_BANKNOTE:
-        if (screen === screenBanknotes && selectedBanknote) {
+        if (selectedBanknote) {
           await handlePrintBanknote(selectedBanknote.id);
         }
         break;
-      // case ActionEnum.SKIM_SURPLUS:
-      //   await handleSkimSurplus();
-      //   break;
     }
   };
 
@@ -417,20 +335,6 @@ export default function AtmNew() {
 
   const [selectedBanknoteIndex, setSelectedBanknoteIndex] = useState(0);
   const selectedBanknote = mintedBanknotes[selectedBanknoteIndex];
-
-  const screenSelectToken: Screen = {
-    title: "Select Token",
-    options: [
-      {
-        left: { message: "USDC", actionId: ActionEnum.MINT_USDC },
-        right: { message: "EURC", actionId: ActionEnum.MINT_EURC },
-      },
-      {
-        left: { message: "Back", actionId: ActionEnum.GO_WITHDRAW_MENU },
-        right: { message: "", actionId: ActionEnum.NONE },
-      },
-    ],
-  };
 
   const copyAddressToClipboard = () => {
     navigator.clipboard.writeText(address).then(() => {
@@ -477,118 +381,113 @@ export default function AtmNew() {
                   fontSize: "28px",
                 }}
               >
-                {address && (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginBottom: "-26px",
-                    }}
-                  >
-                    <AddressDisplay address={address} />
-                    <Copy
-                      size={32}
-                      onClick={copyAddressToClipboard}
-                      style={{ marginLeft: "5px", cursor: "pointer" }}
-                    />
-                  </div>
-                )}
-                {balance && (
-                  <p
-                    style={{
-                      textAlign: "center",
-                      fontSize: "32px",
-                      marginBottom: "-20px",
-                    }}
-                  >
-                    {balance} ETH
-                  </p>
-                )}
-                {usdcBalance && (
-                  <p style={{ textAlign: "center", fontSize: "24px" }}>
-                    USDC Balance: {usdcBalance}
-                  </p>
-                )}
-                {eurcBalance && (
-                  <p style={{ textAlign: "center", fontSize: "24px" }}>
-                    EURC Balance: {eurcBalance}
-                  </p>
-                )}
-                <h2
-                  style={{
-                    textAlign: "center",
-                    marginBottom: "10px",
-                    fontSize: "42px",
-                  }}
-                >
-                  {screen.title}
-                  {!loggedIn && <AnimatedRetroLogo />}
-                </h2>
-
-                {messageTop && (
-                  <p style={{ textAlign: "center", fontSize: "32px" }}>
-                    {messageTop}
-                  </p>
-                )}
-                {screen === screenConfirm && (
-                  <div>
-                    <p>Select token to mint {amount} banknote:</p>
-                    <button
-                      onClick={() => handleButtonClick(ActionEnum.MINT_USDC)}
-                    >
-                      USDC
-                    </button>
-                    <button
-                      onClick={() => handleButtonClick(ActionEnum.MINT_EURC)}
-                    >
-                      EURC
-                    </button>
-                  </div>
-                )}
-
-                {screen === screenBanknotes && selectedBanknote && (
-                  <div>
-                    <h3>Banknote Details</h3>
-                    <p>ID: {selectedBanknote.id}</p>
-                    <p>
-                      Denomination: {selectedBanknote.denomination}{" "}
-                      {selectedBanknote.tokenSymbol}
-                    </p>
-                  </div>
-                )}
-
-                <div
-                  style={{
-                    flexGrow: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    padding: "10px 0",
-                    fontSize: "32px",
-                  }}
-                >
-                  {screen.options.map((item, index) => (
-                    <div
-                      key={`option-${index}`}
+                {isLoading ? (
+                  <div className="loader"></div>
+                ) : (
+                  <>
+                    {address && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginBottom: "-26px",
+                        }}
+                      >
+                        <AddressDisplay
+                          address={address}
+                          balances={balances}
+                          currentToken={currentToken}
+                          onTokenChange={handleTokenChange}
+                        />
+                        <Copy
+                          size={32}
+                          onClick={copyAddressToClipboard}
+                          style={{ marginLeft: "5px", cursor: "pointer" }}
+                        />
+                      </div>
+                    )}
+                    <h2
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        width: "100%",
-                        marginBottom: "5px",
+                        textAlign: "center",
+                        marginBottom: "10px",
+                        fontSize: "42px",
                       }}
                     >
-                      <span style={{ textAlign: "left" }}>
-                        {item.left.message}
-                      </span>
-                      <span style={{ textAlign: "right" }}>
-                        {item.right.message}
-                      </span>
+                      {screen.title}
+                      {!isLoggedIn && <AnimatedRetroLogo />}
+                    </h2>
+
+                    {messageTop && (
+                      <p style={{ textAlign: "center", fontSize: "32px" }}>
+                        {messageTop}
+                      </p>
+                    )}
+                    {screen === screenConfirm && (
+                      <div>
+                        <p>Select token to mint {amount} banknote:</p>
+                        <button
+                          onClick={() =>
+                            handleButtonClick(ActionEnum.MINT_USDC)
+                          }
+                        >
+                          USDC
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleButtonClick(ActionEnum.MINT_EURC)
+                          }
+                        >
+                          EURC
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleButtonClick(ActionEnum.MINT_NZDT)
+                          }
+                        >
+                          NZDT
+                        </button>
+                        <button
+                          onClick={() => handleButtonClick(ActionEnum.MINT_ETH)}
+                        >
+                          ETH
+                        </button>
+                      </div>
+                    )}
+
+                    <div
+                      style={{
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        padding: "10px 0",
+                        fontSize: "32px",
+                      }}
+                    >
+                      {screen.options.map((item, index) => (
+                        <div
+                          key={`option-${index}`}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            marginBottom: "5px",
+                          }}
+                        >
+                          <span style={{ textAlign: "left" }}>
+                            {item.left.message}
+                          </span>
+                          <span style={{ textAlign: "right" }}>
+                            {item.right.message}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                {messageBottom && (
-                  <p style={{ textAlign: "center" }}>{messageBottom}</p>
+                    {messageBottom && (
+                      <p style={{ textAlign: "center" }}>{messageBottom}</p>
+                    )}
+                  </>
                 )}
               </div>
             </div>

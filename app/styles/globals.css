@@ -21,6 +21,21 @@
     -1px -1px 1px #493e2a33 inset, 0 2px 30px #ddd inset;
 }
 
+.loader {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 body {
   background-image:url("../public/bg1.jpg");
   background-size: cover;
@@ -159,6 +174,45 @@ body {
       transform: rotate(180deg);
     }
   }
+}
+
+.wallet-selector {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.wallet-select {
+  padding: 5px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.wallet-icon {
+  margin-left: 5px;
+}
+
+address-display {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.balance-display {
+  margin-left: 10px;
+}
+
+.token-selector {
+  margin-left: 5px;
+  padding: 2px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
 }
 
 .delete-button {

@@ -14,14 +14,25 @@ App is loaded at `http://localhost:3000`
 
 `npm run dev`
 
-### Notes
+### ATM Payer Portal - How to use your Skeuomorphia Account
 
-#### ATM Portal
+1. An address is generated for you upon login with web3auth.
 
+2. Copy the address using the Copy icon and deposit funds into this address.
 
-#### Merchant Portal
+3. When you print your banknote, currency is withdrawn from your Web3Auth wallet and deposited into the newly minted banknote.
 
+4. Print or save the banknote and store somewhere safe until funds are used. Treat these notes as cash-equivalent.
 
+5. When you are ready to spend your banknotes at a supported merchant. Hand over your stablecoin banknote and the merchant will redeem for you.
+
+6. Any change is sent back to your Skeuomorphia Bank Account, ready for use again immediately.
+
+### Payee Portal - How to Redeem Banknotes
+
+TODO
+
+## Other Notes
 
 https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
 

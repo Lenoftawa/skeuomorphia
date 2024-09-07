@@ -28,15 +28,18 @@
     "jspdf": "^2.5.1",
     "lucide-react": "^0.438.0",
     "next": "14.2.7",
+    "qrcode": "^1.5.4",
     "react": "^18",
     "react-dom": "^18",
     "react-qr-scanner": "^1.0.0-alpha.11",
+    "react-router-dom": "^6.26.1",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "viem": "^2.19.8"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.0",

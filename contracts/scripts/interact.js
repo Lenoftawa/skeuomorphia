@@ -16,22 +16,23 @@ async function main() {
   const tokenName = "USDC";
   const tokenDecimals = 6;
 
-  // Use getContractAt for USDC
   const token = await ethers.getContractAt("IERC20", tokenAddress);
 
-  // Check token balance of the vault contract
   const vaultBalance = await token.balanceOf(vaultAddress);
   console.log(`Vault ${tokenName} balance: ${ethers.utils.formatUnits(vaultBalance, tokenDecimals)} ${tokenName}`);
 
-  // Define denomination (1 USDC)
   const denominationAmount = 1;
   console.log(`Denomination: ${denominationAmount} ${tokenName}`);
 
   try {
-    // Create a new wallet for the banknote
     const banknoteWallet = ethers.Wallet.createRandom();
     console.log("Minting banknote...");
     console.log("Banknote Public Address:", banknoteWallet.address);
+
+    // Approve the vault to spend tokens
+    const approvalTx = await token.approve(vaultAddress, ethers.utils.parseUnits(denominationAmount.toString(), tokenDecimals));
+    await approvalTx.wait();
+    console.log("Approval transaction completed");
 
     // Mint banknote
     const mintTx = await vault.mintBanknote(
@@ -54,11 +55,9 @@ async function main() {
         console.log(`Banknote Private Key: ${banknoteWallet.privateKey}`);
         console.log(`Banknote Public Address: ${banknoteWallet.address}`);
 
-        // Get banknote info
         const banknoteInfo = await vault.getBanknoteInfo(banknoteId);
         console.log("Banknote info:", banknoteInfo);
 
-        // Save banknote info to a file for easy access
         const banknoteData = {
           id: banknoteId.toString(),
           privateKey: banknoteWallet.privateKey,

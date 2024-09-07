@@ -14,6 +14,8 @@ export enum ActionEnum {
   GO_SETTINGS,
   MINT_USDC,
   MINT_EURC,
+  MINT_NZDT,
+  MINT_ETH,
   PROCESS_WITHDRAW_100,
   PROCESS_WITHDRAW_50,
   PROCESS_WITHDRAW_20,
@@ -27,7 +29,8 @@ export enum ActionEnum {
   PRINT_BANKNOTE,
   PREVIOUS_BANKNOTE,
   NEXT_BANKNOTE,
-  NONE
+  NONE,
+  GO_TRANSFER
 }
 
 // export enum ActionEnum {

@@ -1,435 +1,449 @@
-import { ethers } from 'ethers';
+import { sepolia } from "viem/chains";
 import { Web3Auth } from "@web3auth/modal";
+import {
+  createPublicClient,
+  createWalletClient,
+  custom,
+  formatUnits,
+  parseUnits,
+  encodeFunctionData,
+  keccak256,
+  toBytes,
+  Address,
+  Log,
+  decodeEventLog,
+} from "viem";
 import { CHAIN_NAMESPACES, IProvider } from "@web3auth/base";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 
 // Replace with your contract ABI
 const CONTRACT_ABI = [
   {
-    "name": "BanknoteCollateralVault",
-    "address": "0xbf26b234f3e48b32cfdad055b31a99c19cb45557",
-    "abi": [
+    name: "BanknoteCollateralVault",
+    address: "0xbf26b234f3e48b32cfdad055b31a99c19cb45557",
+    abi: [
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "address",
-            "name": "target",
-            "type": "address"
-          }
+            internalType: "address",
+            name: "target",
+            type: "address",
+          },
         ],
-        "name": "AddressEmptyCode",
-        "type": "error"
+        name: "AddressEmptyCode",
+        type: "error",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "address",
-            "name": "account",
-            "type": "address"
-          }
+            internalType: "address",
+            name: "account",
+            type: "address",
+          },
         ],
-        "name": "AddressInsufficientBalance",
-        "type": "error"
+        name: "AddressInsufficientBalance",
+        type: "error",
       },
       {
-        "inputs": [],
-        "name": "FailedInnerCall",
-        "type": "error"
+        inputs: [],
+        name: "FailedInnerCall",
+        type: "error",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "address",
-            "name": "token",
-            "type": "address"
-          }
+            internalType: "address",
+            name: "token",
+            type: "address",
+          },
         ],
-        "name": "SafeERC20FailedOperation",
-        "type": "error"
+        name: "SafeERC20FailedOperation",
+        type: "error",
       },
       {
-        "anonymous": false,
-        "inputs": [
+        anonymous: false,
+        inputs: [
           {
-            "indexed": true,
-            "internalType": "address",
-            "name": "_sender",
-            "type": "address"
+            indexed: true,
+            internalType: "address",
+            name: "_sender",
+            type: "address",
           },
           {
-            "indexed": false,
-            "internalType": "address",
-            "name": "_erc20",
-            "type": "address"
+            indexed: false,
+            internalType: "address",
+            name: "_erc20",
+            type: "address",
           },
           {
-            "indexed": false,
-            "internalType": "uint256",
-            "name": "_amount",
-            "type": "uint256"
-          }
+            indexed: false,
+            internalType: "uint256",
+            name: "_amount",
+            type: "uint256",
+          },
         ],
-        "name": "Deposited",
-        "type": "event"
+        name: "Deposited",
+        type: "event",
       },
       {
-        "anonymous": false,
-        "inputs": [
+        anonymous: false,
+        inputs: [
           {
-            "indexed": true,
-            "internalType": "address",
-            "name": "minter",
-            "type": "address"
+            indexed: true,
+            internalType: "address",
+            name: "minter",
+            type: "address",
           },
           {
-            "indexed": false,
-            "internalType": "address",
-            "name": "erc20",
-            "type": "address"
+            indexed: false,
+            internalType: "address",
+            name: "erc20",
+            type: "address",
           },
           {
-            "indexed": false,
-            "internalType": "uint32",
-            "name": "id",
-            "type": "uint32"
+            indexed: false,
+            internalType: "uint32",
+            name: "id",
+            type: "uint32",
           },
           {
-            "indexed": false,
-            "internalType": "uint8",
-            "name": "denomination",
-            "type": "uint8"
-          }
+            indexed: false,
+            internalType: "uint8",
+            name: "denomination",
+            type: "uint8",
+          },
         ],
-        "name": "banknoteMinted",
-        "type": "event"
+        name: "banknoteMinted",
+        type: "event",
       },
       {
-        "anonymous": false,
-        "inputs": [
+        anonymous: false,
+        inputs: [
           {
-            "indexed": true,
-            "internalType": "address",
-            "name": "redeemer",
-            "type": "address"
+            indexed: true,
+            internalType: "address",
+            name: "redeemer",
+            type: "address",
           },
           {
-            "indexed": false,
-            "internalType": "address",
-            "name": "erc20",
-            "type": "address"
+            indexed: false,
+            internalType: "address",
+            name: "erc20",
+            type: "address",
           },
           {
-            "indexed": false,
-            "internalType": "uint256",
-            "name": "amount",
-            "type": "uint256"
+            indexed: false,
+            internalType: "uint256",
+            name: "amount",
+            type: "uint256",
           },
           {
-            "indexed": false,
-            "internalType": "bytes32",
-            "name": "description",
-            "type": "bytes32"
+            indexed: false,
+            internalType: "bytes32",
+            name: "description",
+            type: "bytes32",
           },
           {
-            "indexed": false,
-            "internalType": "uint32",
-            "name": "id",
-            "type": "uint32"
-          }
+            indexed: false,
+            internalType: "uint32",
+            name: "id",
+            type: "uint32",
+          },
         ],
-        "name": "banknoteRedeemed",
-        "type": "event"
+        name: "banknoteRedeemed",
+        type: "event",
       },
       {
-        "anonymous": false,
-        "inputs": [
+        anonymous: false,
+        inputs: [
           {
-            "indexed": true,
-            "internalType": "address",
-            "name": "_sender",
-            "type": "address"
+            indexed: true,
+            internalType: "address",
+            name: "_sender",
+            type: "address",
           },
           {
-            "indexed": false,
-            "internalType": "address",
-            "name": "_erc20",
-            "type": "address"
+            indexed: false,
+            internalType: "address",
+            name: "_erc20",
+            type: "address",
           },
           {
-            "indexed": false,
-            "internalType": "uint256",
-            "name": "_amount",
-            "type": "uint256"
-          }
+            indexed: false,
+            internalType: "uint256",
+            name: "_amount",
+            type: "uint256",
+          },
         ],
-        "name": "surplusFundsSkimmed",
-        "type": "event"
+        name: "surplusFundsSkimmed",
+        type: "event",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "address",
-            "name": "_erc20",
-            "type": "address"
+            internalType: "address",
+            name: "_erc20",
+            type: "address",
           },
           {
-            "internalType": "uint256",
-            "name": "_amount",
-            "type": "uint256"
-          }
+            internalType: "uint256",
+            name: "_amount",
+            type: "uint256",
+          },
         ],
-        "name": "DepositFrom",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
+        name: "DepositFrom",
+        outputs: [],
+        stateMutability: "nonpayable",
+        type: "function",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "address",
-            "name": "_erc20",
-            "type": "address"
+            internalType: "address",
+            name: "_erc20",
+            type: "address",
           },
           {
-            "internalType": "address",
-            "name": "_pubkey",
-            "type": "address"
+            internalType: "address",
+            name: "_pubkey",
+            type: "address",
           },
           {
-            "internalType": "uint8",
-            "name": "_denomination",
-            "type": "uint8"
-          }
+            internalType: "uint8",
+            name: "_denomination",
+            type: "uint8",
+          },
         ],
-        "name": "mintBanknote",
-        "outputs": [
+        name: "mintBanknote",
+        outputs: [
           {
-            "internalType": "uint32",
-            "name": "id",
-            "type": "uint32"
-          }
+            internalType: "uint32",
+            name: "id",
+            type: "uint32",
+          },
         ],
-        "stateMutability": "nonpayable",
-        "type": "function"
+        stateMutability: "nonpayable",
+        type: "function",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "uint32",
-            "name": "_banknote",
-            "type": "uint32"
+            internalType: "uint32",
+            name: "_banknote",
+            type: "uint32",
           },
           {
-            "internalType": "uint256",
-            "name": "_amount",
-            "type": "uint256"
+            internalType: "uint256",
+            name: "_amount",
+            type: "uint256",
           },
           {
-            "internalType": "bytes",
-            "name": "_sig",
-            "type": "bytes"
+            internalType: "bytes",
+            name: "_sig",
+            type: "bytes",
           },
           {
-            "internalType": "bytes32",
-            "name": "_description",
-            "type": "bytes32"
-          }
+            internalType: "bytes32",
+            name: "_description",
+            type: "bytes32",
+          },
         ],
-        "name": "redeemBanknote",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
+        name: "redeemBanknote",
+        outputs: [],
+        stateMutability: "nonpayable",
+        type: "function",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "address",
-            "name": "_erc20",
-            "type": "address"
+            internalType: "address",
+            name: "_erc20",
+            type: "address",
           },
           {
-            "internalType": "uint256",
-            "name": "_amount",
-            "type": "uint256"
-          }
+            internalType: "uint256",
+            name: "_amount",
+            type: "uint256",
+          },
         ],
-        "name": "skimSurplus",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
+        name: "skimSurplus",
+        outputs: [],
+        stateMutability: "nonpayable",
+        type: "function",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "address",
-            "name": "_owner",
-            "type": "address"
-          }
+            internalType: "address",
+            name: "_owner",
+            type: "address",
+          },
         ],
-        "stateMutability": "nonpayable",
-        "type": "constructor"
+        stateMutability: "nonpayable",
+        type: "constructor",
       },
       {
-        "stateMutability": "payable",
-        "type": "receive"
+        stateMutability: "payable",
+        type: "receive",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "uint32",
-            "name": "_id",
-            "type": "uint32"
-          }
+            internalType: "uint32",
+            name: "_id",
+            type: "uint32",
+          },
         ],
-        "name": "getBanknoteInfo",
-        "outputs": [
+        name: "getBanknoteInfo",
+        outputs: [
           {
-            "internalType": "address",
-            "name": "",
-            "type": "address"
+            internalType: "address",
+            name: "",
+            type: "address",
           },
           {
-            "internalType": "address",
-            "name": "",
-            "type": "address"
+            internalType: "address",
+            name: "",
+            type: "address",
           },
           {
-            "internalType": "address",
-            "name": "",
-            "type": "address"
+            internalType: "address",
+            name: "",
+            type: "address",
           },
           {
-            "internalType": "uint8",
-            "name": "",
-            "type": "uint8"
-          }
+            internalType: "uint8",
+            name: "",
+            type: "uint8",
+          },
         ],
-        "stateMutability": "view",
-        "type": "function"
+        stateMutability: "view",
+        type: "function",
       },
       {
-        "inputs": [],
-        "name": "getNextId",
-        "outputs": [
+        inputs: [],
+        name: "getNextId",
+        outputs: [
           {
-            "internalType": "uint32",
-            "name": "",
-            "type": "uint32"
-          }
+            internalType: "uint32",
+            name: "",
+            type: "uint32",
+          },
         ],
-        "stateMutability": "view",
-        "type": "function"
+        stateMutability: "view",
+        type: "function",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "address",
-            "name": "_owner",
-            "type": "address"
+            internalType: "address",
+            name: "_owner",
+            type: "address",
           },
           {
-            "internalType": "address",
-            "name": "_erc20",
-            "type": "address"
-          }
+            internalType: "address",
+            name: "_erc20",
+            type: "address",
+          },
         ],
-        "name": "getSurplus",
-        "outputs": [
+        name: "getSurplus",
+        outputs: [
           {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-          }
+            internalType: "uint256",
+            name: "",
+            type: "uint256",
+          },
         ],
-        "stateMutability": "view",
-        "type": "function"
+        stateMutability: "view",
+        type: "function",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "bytes",
-            "name": "signature",
-            "type": "bytes"
-          }
+            internalType: "bytes",
+            name: "signature",
+            type: "bytes",
+          },
         ],
-        "name": "splitSignature",
-        "outputs": [
+        name: "splitSignature",
+        outputs: [
           {
-            "internalType": "bytes32",
-            "name": "r",
-            "type": "bytes32"
+            internalType: "bytes32",
+            name: "r",
+            type: "bytes32",
           },
           {
-            "internalType": "bytes32",
-            "name": "s",
-            "type": "bytes32"
+            internalType: "bytes32",
+            name: "s",
+            type: "bytes32",
           },
           {
-            "internalType": "uint8",
-            "name": "v",
-            "type": "uint8"
-          }
+            internalType: "uint8",
+            name: "v",
+            type: "uint8",
+          },
         ],
-        "stateMutability": "pure",
-        "type": "function"
+        stateMutability: "pure",
+        type: "function",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "string",
-            "name": "str",
-            "type": "string"
-          }
+            internalType: "string",
+            name: "str",
+            type: "string",
+          },
         ],
-        "name": "stringToAddress",
-        "outputs": [
+        name: "stringToAddress",
+        outputs: [
           {
-            "internalType": "address",
-            "name": "",
-            "type": "address"
-          }
+            internalType: "address",
+            name: "",
+            type: "address",
+          },
         ],
-        "stateMutability": "pure",
-        "type": "function"
+        stateMutability: "pure",
+        type: "function",
       },
       {
-        "inputs": [
+        inputs: [
           {
-            "internalType": "address",
-            "name": "_addr",
-            "type": "address"
+            internalType: "address",
+            name: "_addr",
+            type: "address",
           },
           {
-            "internalType": "bytes",
-            "name": "_signature",
-            "type": "bytes"
-          }
+            internalType: "bytes",
+            name: "_signature",
+            type: "bytes",
+          },
         ],
-        "name": "verifySignatureOfAddress",
-        "outputs": [
+        name: "verifySignatureOfAddress",
+        outputs: [
           {
-            "internalType": "address",
-            "name": "",
-            "type": "address"
-          }
+            internalType: "address",
+            name: "",
+            type: "address",
+          },
         ],
-        "stateMutability": "pure",
-        "type": "function"
-      }
+        stateMutability: "pure",
+        type: "function",
+      },
     ],
-    "filePath": "default_workspace/contracts/banknoteCollateralVault.sol",
-    "pinnedAt": 1725617324084
-  }  
+    filePath: "default_workspace/contracts/banknoteCollateralVault.sol",
+    pinnedAt: 1725617324084,
+  },
 ];
 
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
-const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS || '';
-const EURC_ADDRESS = process.env.NEXT_PUBLIC_EURC_ADDRESS || '';
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
+const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}`;
+const EURC_ADDRESS = process.env.NEXT_PUBLIC_EURC_ADDRESS as `0x${string}`;
+const NZDT_ADDRESS = process.env.NEXT_PUBLIC_NZDT_ADDRESS as `0x${string}`;
 
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
   chainId: "0xaa36a7", // Sepolia chain ID
-  rpcTarget: "https://rpc.sepolia.org", // Sepolia RPC URL
+  rpcTarget: "https://rpc.sepolia.org",
   displayName: "Sepolia Testnet",
   blockExplorer: "https://sepolia.etherscan.io",
   ticker: "ETH",
@@ -437,111 +451,291 @@ const chainConfig = {
 };
 
 const privateKeyProvider = new EthereumPrivateKeyProvider({
-  config: { chainConfig }
+  config: { chainConfig },
 });
 
-const web3auth = new Web3Auth({
-  clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID || '',
+export const web3auth = new Web3Auth({
+  clientId: process.env.NEXT_PUBLIC_WEB3AUTH_CLIENT_ID || "",
   web3AuthNetwork: "testnet",
   chainConfig,
-  privateKeyProvider
+  privateKeyProvider,
 });
 
-async function getProvider(): Promise<ethers.BrowserProvider> {
-  await web3auth.initModal();
-  const web3authProvider = await web3auth.connect();
-  return new ethers.BrowserProvider(web3authProvider as IProvider);
+async function getClients(provider: IProvider) {
+  const publicClient = createPublicClient({
+    chain: sepolia,
+    transport: custom(provider),
+  });
+
+  const walletClient = createWalletClient({
+    chain: sepolia,
+    transport: custom(provider),
+  });
+
+  return { publicClient, walletClient };
 }
 
-async function getContract(provider: ethers.BrowserProvider): Promise<ethers.Contract> {
-  const signer = await provider.getSigner();
-  return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+export async function mintBanknote(
+  provider: IProvider,
+  erc20Address: Address,
+  denomination: number
+): Promise<{ txHash: string; id: number }> {
+  const { publicClient, walletClient } = await getClients(provider);
+  const [address] = await walletClient.getAddresses();
+
+  const { request } = await publicClient.simulateContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: "mintBanknote",
+    account: address,
+    args: [erc20Address, address, denomination],
+  });
+
+  const txHash = await walletClient.writeContract(request);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+  const mintEvent = receipt.logs.find(
+    (log) => log.topics[0] === keccak256(toBytes("banknoteMinted(address,address,uint32,uint8)"))
+  ) as Log<bigint, number, false> | undefined;
+
+  const id = mintEvent && mintEvent.topics[3] ? parseInt(mintEvent.topics[3], 16) : 0;
+
+  return { txHash, id };
 }
 
-export async function mintBanknote(erc20Address: string, pubkey: string, denomination: number): Promise<{ txHash: string; id: number }> {
-  const provider = await getProvider();
-  const contract = await getContract(provider);
-  const tx = await contract.mintBanknote(erc20Address, pubkey, denomination);
-  const receipt = await tx.wait();
-  const event = receipt.logs.find(log => log.eventName === 'banknoteMinted');
-  const id = event?.args?.id;
-  return { txHash: tx.hash, id };
+export async function redeemBanknote(
+  provider: IProvider,
+  banknoteId: number,
+  amount: bigint,
+  signature: `0x${string}`,
+  description: string
+): Promise<{ txHash: string; amount: string; tokenSymbol: string }> {
+  const { publicClient, walletClient } = await getClients(provider);
+  const [address] = await walletClient.getAddresses();
+
+  const { request } = await publicClient.simulateContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: "redeemBanknote",
+    account: address,
+    args: [banknoteId, amount, signature, description],
+  });
+
+  const txHash = await walletClient.writeContract(request);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+  const redeemedEvent = receipt.logs.find(
+    (log) => log.topics[0] === keccak256(toBytes("banknoteRedeemed(address,address,uint256,bytes32,uint32)"))
+  ) as Log<bigint, number, false> | undefined;
+  
+  if (redeemedEvent && redeemedEvent.data) {
+    const eventAbi = CONTRACT_ABI.find(item => item.name === "banknoteRedeemed");
+    if (!eventAbi || eventAbi.type !== "event") {
+      throw new Error("banknoteRedeemed event not found in ABI");
+    }
+
+    const decodedData = decodeEventLog({
+      abi: [eventAbi],
+      data: redeemedEvent.data,
+      topics: redeemedEvent.topics,
+    });
+
+    const erc20 = decodedData.args.erc20 as Address;
+    const amountBN = decodedData.args.amount as bigint;
+    const tokenSymbol = await getTokenSymbol(provider, erc20);
+
+    return {
+      txHash,
+      amount: formatUnits(amountBN, await getTokenDecimals(provider, erc20)),
+      tokenSymbol,
+    };
+  }
+
+  throw new Error("Redemption event not found");
 }
 
-export async function redeemBanknote(banknoteId: number, amount: string, signature: string, discount: string): Promise<{ txHash: string; amount: string; tokenSymbol: string }> {
-  const provider = await getProvider();
-  const contract = await getContract(provider);
-  const tx = await contract.redeemBanknote(banknoteId, amount, signature, discount);
-  const receipt = await tx.wait();
-  const event = receipt.logs.find(log => log.eventName === 'banknoteRedeemed');
-  const redeemedAmount = event?.args?.amount;
-  const erc20Address = event?.args?.erc20;
+export async function getBanknoteInfo(
+  provider: IProvider,
+  banknoteId: number
+): Promise<{
+  minter: Address;
+  pubkey: Address;
+  erc20: Address;
+  denomination: number;
+}> {
+  const { publicClient } = await getClients(provider);
 
-  const tokenContract = new ethers.Contract(erc20Address, ['function symbol() view returns (string)'], provider);
-  const tokenSymbol = await tokenContract.symbol();
-
-  return { 
-    txHash: tx.hash, 
-    amount: ethers.formatUnits(redeemedAmount, 6), // Using 6 decimals for USDC
-    tokenSymbol 
-  };
-}
-
-export async function skimSurplus(erc20Address: string, amount: string): Promise<{ txHash: string; amount: string }> {
-  const provider = await getProvider();
-  const contract = await getContract(provider);
-  const tx = await contract.skimSurplus(erc20Address, amount);
-  const receipt = await tx.wait();
-  const event = receipt.logs.find(log => log.eventName === 'surplusFundsSkimmed');
-  const skimmedAmount = event?.args?._amount;
+  const result = await publicClient.readContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: "getBanknoteInfo",
+    args: [banknoteId],
+  }) as [Address, Address, Address, number];
 
   return {
-    txHash: tx.hash,
-    amount: ethers.formatUnits(skimmedAmount, 6) // Using 6 decimals for USDC
+    minter: result[0],
+    pubkey: result[1],
+    erc20: result[2],
+    denomination: result[3],
   };
 }
 
-export async function getBanknoteInfo(banknoteId: number): Promise<{ minter: string; pubkey: string; erc20: string; denomination: number }> {
-  const provider = await getProvider();
-  const contract = await getContract(provider);
-  const [minter, pubkey, erc20, denomination] = await contract.getBanknoteInfo(banknoteId);
-  return { minter, pubkey, erc20, denomination };
+
+async function getTokenDecimals(provider: IProvider, tokenAddress: Address): Promise<number> {
+  const { publicClient } = await getClients(provider);
+
+  const decimals = await publicClient.readContract({
+    address: tokenAddress,
+    abi: [
+      {
+        inputs: [],
+        name: "decimals",
+        outputs: [{ name: "", type: "uint8" }],
+        stateMutability: "view",
+        type: "function",
+      },
+    ],
+    functionName: "decimals",
+  });
+
+  return Number(decimals);
 }
 
-export async function getSurplus(owner: string, erc20Address: string): Promise<string> {
-  const provider = await getProvider();
-  const contract = await getContract(provider);
-  const surplus = await contract.getSurplus(owner, erc20Address);
-  return ethers.formatUnits(surplus, 6); // Using 6 decimals for USDC
+export async function getTokenSymbol(provider: IProvider, tokenAddress: Address): Promise<string> {
+  const { publicClient } = await getClients(provider);
+
+  const symbol = await publicClient.readContract({
+    address: tokenAddress,
+    abi: [
+      {
+        inputs: [],
+        name: "symbol",
+        outputs: [{ name: "", type: "string" }],
+        stateMutability: "view",
+        type: "function",
+      },
+    ],
+    functionName: "symbol",
+  });
+
+  return symbol as string;
 }
 
-export async function getNextId(): Promise<number> {
-  const provider = await getProvider();
-  const contract = await getContract(provider);
-  return await contract.getNextId();
+export async function getTokenBalance(
+  provider: IProvider,
+  userAddress: Address,
+  tokenAddress: Address
+): Promise<string> {
+  const { publicClient } = await getClients(provider);
+
+  if (tokenAddress === userAddress) {
+    // For ETH
+    const balance = await publicClient.getBalance({ address: userAddress });
+    return formatUnits(balance, 18);
+  } else {
+    // For ERC20 tokens
+    try {
+      const balance = await publicClient.readContract({
+        address: tokenAddress,
+        abi: [
+          {
+            inputs: [{ name: "account", type: "address" }],
+            name: "balanceOf",
+            outputs: [{ name: "", type: "uint256" }],
+            stateMutability: "view",
+            type: "function",
+          },
+        ],
+        functionName: "balanceOf",
+        args: [userAddress],
+      });
+
+      const decimals = await getTokenDecimals(provider, tokenAddress);
+      return formatUnits(balance as bigint, decimals);
+    } catch (error) {
+      console.error(`Error fetching balance for token ${tokenAddress}:`, error);
+      return "0";
+    }
+  }
 }
 
-export async function fetchTokenAddresses(): Promise<{ USDC: string; EURC: string }> {
-  return { USDC: USDC_ADDRESS, EURC: EURC_ADDRESS };
+export async function getAllTokenBalances(
+  provider: IProvider,
+  userAddress: Address
+): Promise<{
+  ETH: string;
+  USDC: string;
+  EURC: string;
+  NZDT: string;
+}> {
+  const tokenAddresses = await getTokenAddresses();
+
+  const [ethBalance, usdcBalance, eurcBalance, nzdtBalance] = await Promise.all([
+    getTokenBalance(provider, userAddress, userAddress), // ETH balance
+    getTokenBalance(provider, userAddress, tokenAddresses.USDC),
+    getTokenBalance(provider, userAddress, tokenAddresses.EURC),
+    getTokenBalance(provider, userAddress, tokenAddresses.NZDT),
+  ]);
+
+  return {
+    ETH: ethBalance,
+    USDC: usdcBalance,
+    EURC: eurcBalance,
+    NZDT: nzdtBalance,
+  };
 }
 
-export async function getTokenBalance(address: string, tokenAddress: string): Promise<string> {
-  const provider = await getProvider();
-  const tokenContract = new ethers.Contract(tokenAddress, ['function balanceOf(address) view returns (uint256)', 'function symbol() view returns (string)'], provider);
-  const balance = await tokenContract.balanceOf(address);
-  const symbol = await tokenContract.symbol();
-  return `${ethers.formatUnits(balance, 6)} ${symbol}`; // Using 6 decimals for USDC
+export async function getTokenAddresses(): Promise<{
+  USDC: Address;
+  EURC: Address;
+  NZDT: Address;
+  ETH: Address;
+}> {
+  return { 
+    USDC: USDC_ADDRESS,
+    EURC: EURC_ADDRESS,
+    NZDT: NZDT_ADDRESS,
+    ETH: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' as Address
+  };
 }
 
-export async function getTokenAddresses(): Promise<{ USDC: string; EURC: string }> {
-  return { USDC: USDC_ADDRESS, EURC: EURC_ADDRESS };
-}
+export async function approveTokenSpending(
+  provider: IProvider,
+  tokenAddress: Address,
+  amount: string
+): Promise<string | null> {
+  const { publicClient, walletClient } = await getClients(provider);
+  const [address] = await walletClient.getAddresses();
 
-export async function approveTokenSpending(tokenAddress: string, amount: string): Promise<string> {
-  const provider = await getProvider();
-  const signer = await provider.getSigner();
-  const tokenContract = new ethers.Contract(tokenAddress, ['function approve(address spender, uint256 amount) returns (bool)'], signer);
-  const tx = await tokenContract.approve(CONTRACT_ADDRESS, amount);
-  await tx.wait();
-  return tx.hash;
+  // If the token address is the same as the user's address, it's ETH and no approval is needed
+  if (tokenAddress === address) {
+    return null;
+  }
+
+  const decimals = await getTokenDecimals(provider, tokenAddress);
+  const parsedAmount = parseUnits(amount, decimals);
+
+  const { request } = await publicClient.simulateContract({
+    address: tokenAddress,
+    abi: [
+      {
+        inputs: [
+          { name: "spender", type: "address" },
+          { name: "amount", type: "uint256" },
+        ],
+        name: "approve",
+        outputs: [{ name: "", type: "bool" }],
+        stateMutability: "nonpayable",
+        type: "function",
+      },
+    ],
+    functionName: "approve",
+    account: address,
+    args: [CONTRACT_ADDRESS, parsedAmount],
+  });
+
+  const txHash = await walletClient.writeContract(request);
+  await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+  return txHash;
 }
