@@ -284,7 +284,6 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         emit surplusFundsSkimmed(msg.sender,_erc20, _withdrawal);
     }
 
-
     /**
      * Function that allows the contract to receive ETH
      */
