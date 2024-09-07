@@ -1,15 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-// Useful for debugging. Remove when deploying to a live network.
-import "hardhat/console.sol";
-
-// Use openzeppelin to inherit battle-tested implementations (ERC20, ERC721, etc)
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
 /**
  * A smart contract that mints and redeems banknotes.  The web app is responsible for printing the notes.
  * Before calling the mint function the Dapp must create a pulic/private key pair.
@@ -25,7 +16,13 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * @author LenOfTawa, flexfinRTP 
  */
 
-// 9/3 gaffney - added ReentrancyGuard and SafeERC20
+// Use openzeppelin to inherit battle-tested implementations (ERC20, ERC721, etc)
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+
 contract BanknoteCollateralVault is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -74,9 +71,10 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         _;
     }
 
-    //
+    //--------
     // Getters
-    //
+    //--------
+
     function getBanknoteInfo(
         uint32 _id
     ) public view returns (address, address, address, uint8) {
@@ -99,9 +97,11 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         return (nextId);
     }
 
-    //
+    //----------
     // Utilities
-    //
+    //----------
+
+    // Verifies that a given digital signature corresponds to a specific Ethereum address.
     function verifySignatureOfAddress(address _addr, bytes memory _signature) public pure returns (address) {
         bytes32 messageHash = keccak256(abi.encodePacked(_addr));
         bytes32 messagePrefix = "\x19Ethereum Signed Message:\n32";
@@ -110,7 +110,7 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         address signer = ecrecover(prefixedHash, v, r, s);
         return signer;
     }
-
+    // Takes a digital signature as input and extracts its three components: r, s, and v.
     function splitSignature(bytes memory signature) public pure returns (bytes32 r, bytes32 s, uint8 v) {
         require(signature.length == 65, "Invalid signature length");
 
@@ -131,10 +131,10 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         for (uint i = 0; i < 20; i++) {
             addrBytes[i] = bytes1(hexCharToByte(strBytes[2 + i * 2]) * 16 + hexCharToByte(strBytes[3 + i * 2]));
         }
-
         return address(uint160(bytes20(addrBytes)));
     }
 
+    // Cnverts a single hex char into its corresponding numeric byte value (uint8). 
     function hexCharToByte(bytes1 char) internal pure returns (uint8) {
         uint8 byteValue = uint8(char);
         if (byteValue >= uint8(bytes1('0')) && byteValue <= uint8(bytes1('9'))) {
@@ -147,28 +147,24 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         revert("Invalid hex character");
     }
 
-
-    //
-    // Main functions
-    // 9/3 gaffney - added approveAndMint
-    /*
-    function approveAndMint(
-        address _erc20,
-        address _pubkey,
+    // Check that the domination is one of the possibles/
+    function isDenominationValid(
         uint8 _denomination
-    ) external nonReentrant returns (uint32) {
-        //Phase 2 - get the decimals from the contract
-        //uint256 amount = _denomination * 10 ** 18; // Assuming 18 decimals
-        //IERC20 token = IERC20(_erc20);
-
-        // Approve and transfer in one transaction 
-        // safeApprove is not part ofno safeERC20!)
-        // Also does not seem to work anyway.
-        token.safeApprove(address(this), amount);
-        return mintBanknote(_erc20, _pubkey, _denomination);
+    ) internal view returns (bool) {
+        for (uint8 i = 0; i < denominations.length; i++) {
+            if (_denomination == denominations[i]) {
+                return true;
+            }
+        }
+        return false;
     }
-    */
 
+    /**
+     * @notice Deposits a specified amount of ERC20 tokens into the contract from the sender's address.
+     * @dev Transfers tokens from the sender to the contract and updates surplus funds.
+     * @param _erc20 The address of the ERC20 token to deposit.
+     * @param _amount The amount of tokens to deposit.
+     */
     function DepositFrom(
         address _erc20,
         uint256 _amount
@@ -179,6 +175,14 @@ contract BanknoteCollateralVault is ReentrancyGuard {
 
     }
 
+    /**
+     * @notice Mints a new banknote with a specific ERC20 token, public key, and denomination.
+     * @dev Creates a new banknote, checks if the denomination is valid, and handles token transfers.
+     * @param _erc20 The address of the ERC20 token to use for the banknote.
+     * @param _pubkey The public key associated with the banknote.
+     * @param _denomination The denomination of the banknote.
+     * @return id The unique ID of the newly minted banknote.
+     */
     function mintBanknote(
         address _erc20,
         address _pubkey,
@@ -211,7 +215,14 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         emit banknoteMinted(msg.sender, _erc20, id, _denomination);
     }
 
- 
+     /**
+     * @notice Redeems a banknote by verifying the provided signature and transferring tokens.
+     * @dev Checks if the signature is valid, verifies the banknote details, and handles token transfers.
+     * @param _banknote The ID of the banknote to redeem.
+     * @param _amount The amount to redeem from the banknote.
+     * @param _sig The signature of the sender's address signed with the private key associated with the banknote.
+     * @param _description Additional description or information for the redemption.
+     */
     function redeemBanknote(
         uint32 _banknote,
         uint256 _amount,
@@ -252,6 +263,12 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         delete (banknotes[_banknote]);
     }
 
+    /**
+     * @notice Skims surplus funds from the contract back to the sender.
+     * @dev Withdraws the specified or total surplus amount of ERC20 tokens to the sender.
+     * @param _erc20 The address of the ERC20 token to skim.
+     * @param _amount The amount to skim; if 0, skims all available surplus.
+     */
     function skimSurplus(address _erc20, uint256 _amount) public nonReentrant {
 
         uint256 availableSurplus = surplusFunds[msg.sender][_erc20];
@@ -267,16 +284,7 @@ contract BanknoteCollateralVault is ReentrancyGuard {
         emit surplusFundsSkimmed(msg.sender,_erc20, _withdrawal);
     }
 
-    function isDenominationValid(
-        uint8 _denomination
-    ) internal view returns (bool) {
-        for (uint8 i = 0; i < denominations.length; i++) {
-            if (_denomination == denominations[i]) {
-                return true;
-            }
-        }
-        return false;
-    }
+
     /**
      * Function that allows the contract to receive ETH
      */
