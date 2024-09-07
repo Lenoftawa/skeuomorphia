@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { Copy } from "lucide-react";
 import AddressDisplay from "../../components/AddressDisplay";
 import AnimatedRetroLogo from "../AnimatedRetroLogo";
+import BanknotePrinter from "../BanknotePrinter";
 import {
   mintBanknote,
   getBanknoteInfo,
@@ -14,6 +15,7 @@ import {
   approveTokenSpending,
   web3auth,
   getTokenSymbol,
+  generateAndSaveBanknotePDF,
 } from "../../utils/web3";
 import {
   screenDisconnected,
@@ -40,6 +42,7 @@ export default function ATM() {
   const [messageBottom, setMessageBottom] = useState<string>("");
   const [amount, setAmount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showBanknotePrinter, setShowBanknotePrinter] = useState(false);
   const [mintedBanknotes, setMintedBanknotes] = useState<
     Array<{ id: number; denomination: number; tokenSymbol: string }>
   >([]);
@@ -49,12 +52,12 @@ export default function ATM() {
     EURC: string;
     NZDT: string;
   }>({
-    ETH: "0",
-    USDC: "0",
-    EURC: "0",
-    NZDT: "0",
+    ETH: "0 ETH",
+    USDC: "0 USDC",
+    EURC: "0 EURC",
+    NZDT: "0 NZDT",
   });
-  const [currentToken, setCurrentToken] = useState<string>("ETH");
+  const [currentToken, setCurrentToken] = useState<"ETH" | "USDC" | "EURC" | "NZDT">("ETH");
   const [tokenAddresses, setTokenAddresses] = useState<{
     USDC: Address;
     EURC: Address;
@@ -92,16 +95,21 @@ export default function ATM() {
         web3auth.provider,
         address as Address
       );
-      setBalances(allBalances);
+      setBalances({
+        ETH: `${allBalances.ETH} ETH`,
+        USDC: `${allBalances.USDC} USDC`,
+        EURC: `${allBalances.EURC} EURC`,
+        NZDT: `${allBalances.NZDT} NZDT`,
+      });
     } catch (error) {
       console.error("Error fetching token balances:", error);
       setMessageTop("Failed to fetch token balances. Please try again.");
     }
   };
 
-  const handleTokenChange = (token: string) => {
+  const handleTokenChange = useCallback((token: "ETH" | "USDC" | "EURC" | "NZDT") => {
     setCurrentToken(token);
-  };
+  }, []);
 
   const handleMintBanknote = async (
     denomination: number,
@@ -111,11 +119,11 @@ export default function ATM() {
       setMessageTop("Please connect your wallet first.");
       return;
     }
-
+  
     try {
       const tokenAddress = tokenAddresses[tokenSymbol];
       const amount = denomination.toString();
-
+  
       setMessageTop(`Approving ${tokenSymbol} spending...`);
       const approvalTx = await approveTokenSpending(
         web3auth.provider,
@@ -125,27 +133,27 @@ export default function ATM() {
       console.log(
         `${tokenSymbol} spending approved. Transaction: ${approvalTx}`
       );
-
+  
       setMessageTop(`Minting ${denomination} ${tokenSymbol} banknote...`);
-      const { txHash, id } = await mintBanknote(
+      const { txHash, id, privateKey } = await mintBanknote(
         web3auth.provider,
         tokenAddress,
         denomination
       );
       console.log(`Banknote minted with ID: ${id}, Transaction: ${txHash}`);
-
+  
       await generateAndSaveBanknotePDF(
         denomination,
         tokenSymbol,
         id,
-        "Private key not available" // You might want to handle this differently
+        privateKey
       );
-
+  
       setMintedBanknotes((prevBanknotes) => [
         ...prevBanknotes,
         { id, denomination, tokenSymbol },
       ]);
-
+  
       setScreen(screenMainMenu);
       setMessageTop(`Banknote minted successfully: ID ${id}`);
       await getTokenBalances();
@@ -263,6 +271,12 @@ export default function ATM() {
       case ActionEnum.GO_SETTINGS:
         setScreen(screenSettings);
         break;
+      case ActionEnum.PRINT_TEST_BANKNOTE:
+        setShowBanknotePrinter(true);
+        break;
+        case ActionEnum.EXECUTE_PRINT_BANKNOTE:
+          setShowBanknotePrinter(true);
+          break;
       case ActionEnum.PROCESS_WITHDRAW_100:
       case ActionEnum.PROCESS_WITHDRAW_50:
       case ActionEnum.PROCESS_WITHDRAW_20:
@@ -454,7 +468,14 @@ export default function ATM() {
                         </button>
                       </div>
                     )}
-
+                    {showBanknotePrinter && (
+                      <BanknotePrinter
+                        onClose={() => setShowBanknotePrinter(false)}
+                        onPrint={() =>
+                          handleButtonClick(ActionEnum.EXECUTE_PRINT_BANKNOTE)
+                        }
+                      />
+                    )}
                     <div
                       style={{
                         flexGrow: 1,
