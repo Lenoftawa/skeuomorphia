@@ -226,8 +226,15 @@ export default function ATM() {
     }
   };
 
+  const playATMButtonSound = () => {
+    const audio = new Audio("/atm-button-sound.wav");
+    audio.play();
+  };
+
   const handleButtonClick = async (action: ActionEnum) => {
     console.log("Action:", action);
+
+    playATMButtonSound();
 
     switch (action) {
       case ActionEnum.PROCESS_LOGIN:
