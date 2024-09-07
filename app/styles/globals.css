@@ -118,7 +118,7 @@ body {
   margin-top: 1rem;
 }
 
-.computer-container {
+/* .computer-container {
   --width-monitor: 700px;
   --height-monitor: 650px;
 
@@ -230,6 +230,133 @@ body {
       width: 63px;
       height: 40px;
       background: linear-gradient(to right, #0004 65%, #0008 80%);
+      position: absolute;
+      top: 130px;
+    }
+
+    &::before {
+      left: 0;
+    }
+
+    &::after {
+      right: 0;
+      transform: rotate(180deg);
+    }
+  }
+} */
+
+.computer-container {
+  --width-monitor: 700px;
+  --height-monitor: 650px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  & .monitor {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    align-items: center;
+    width: var(--width-monitor);
+    height: var(--height-monitor);
+    background: linear-gradient(145deg, #3a3a3a, #2b2b2b); /* Dark grey gradient */
+    border-radius: 5px;
+    box-shadow: 10px 10px 20px rgba(0, 0, 0, 0.8), -10px -10px 20px rgba(0, 0, 0, 0.4); /* Darker shadow */
+
+    & .monitor-inner {
+      width: calc(var(--width-monitor) * 0.75);
+      height: calc(var(--height-monitor) * 0.7);
+      border-radius: 5px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #222; /* Dark grey inner background */
+      border: 15px solid #333; /* Darker grey border */
+      border-top: 15px solid #1a1a1a; /* Dark top border */
+      border-bottom: 15px solid #444; /* Slightly lighter bottom border */
+
+      & .screen-container {
+        width: calc(var(--width-monitor) * 0.72);
+        height: calc(var(--height-monitor) * 0.68);
+        background: #111; /* Very dark grey screen container */
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        border: 3px solid #000;
+        box-shadow: 10px 10px 20px 14px rgba(0, 0, 0, 0.8) inset,
+          -10px -10px 20px 14px rgba(0, 0, 0, 0.6) inset; /* Darker inner shadows */
+        position: relative;
+
+        & .screen {
+          width: 100%;
+          max-width: calc(var(--width-monitor) * 0.72);
+          font-family: "EnterCommand";
+          font-size: 32px;
+          color: #e0e0e0; /* Light grey text */
+          text-shadow: 0 0 5px #888; /* Softer text shadow */
+          padding: 10px 20px;
+          box-sizing: border-box;
+          position: absolute;
+          top: 0;
+          z-index: 5;
+          transition: opacity 0.5s;
+
+          &.off {
+            opacity: 0;
+          }
+        }
+      }
+    }
+
+    & .monitor-bottom {
+      width: 100%;
+      height: 50px;
+      position: absolute;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transform: translate(150px, 0);
+
+      & .power-switch {
+        width: 38px;
+        height: 38px;
+        background: linear-gradient(
+          to bottom,
+          #3a3a3a,
+          #2b2b2b
+        ); /* Dark grey power switch */
+        border-radius: 50%;
+        margin-right: 6px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      & .power-led {
+        &:not(.on) {
+          box-shadow: 0 0 1px 1px #444 inset;
+          animation: blink 2s infinite ease-out;
+        }
+
+        &.on {
+          background: #5cef11;
+          box-shadow: 0 0 1px 1px #444 inset;
+        }
+      }
+    }
+
+    &::before,
+    &::after {
+      content: "";
+      display: block;
+      width: 63px;
+      height: 40px;
+      background: linear-gradient(to right, rgba(0, 0, 0, 0.25) 65%, rgba(0, 0, 0, 0.5) 80%);
       position: absolute;
       top: 130px;
     }
