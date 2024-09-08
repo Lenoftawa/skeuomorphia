@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useWeb3Auth } from "../hooks/useWeb3Auth";
 import QRScanner from "./QRScanner";
-import TransactionHistory from "./TransactionHistory";
 import CameraTest from "./CameraTest";
+import TransactionHistory from "./TransactionHistory";
 import { Transaction } from "../types";
+import AddressDisplay from "./AddressDisplay";
 import {
   redeemBanknote,
   getTokenBalance,
   getTokenAddresses,
   web3auth,
+  getBalancesForPrivateKey,
 } from "../utils/web3";
 import { ethers } from "ethers";
 import { jsPDF } from "jspdf";
@@ -134,6 +137,7 @@ const translations = {
 };
 
 export default function Merchant() {
+  const { isLoggedIn, address, balance, login, logout } = useWeb3Auth();
   const [step, setStep] = useState(1);
   const [merchantPublicKey, setMerchantPublicKey] = useState("");
   const [scannedPrivateKey, setScannedPrivateKey] = useState("");
@@ -158,11 +162,15 @@ export default function Merchant() {
   const [scannedBalance, setScannedBalance] = useState("");
   const [scannedWallets, setScannedWallets] = useState<ScannedWallet[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [scannedValue, setScannedValue] = useState("");
+  const [scannedAddress, setScannedAddress] = useState<string>("");
   const [scannedBalances, setScannedBalances] = useState<{
+    ETH: string;
     USDC: string;
     EURC: string;
     NZDT: string;
-  }>({ USDC: "", EURC: "", NZDT: "" });
+  }>({ ETH: "0", USDC: "0", EURC: "0", NZDT: "0" });
+  const [currentToken, setCurrentToken] = useState<string>("NZDT");
   const [selectedToken, setSelectedToken] = useState<"USDC" | "EURC" | "NZDT">(
     "USDC"
   );
@@ -176,9 +184,23 @@ export default function Merchant() {
     NZDT: "0x" as Address,
   });
   const [manualPrivateKey, setManualPrivateKey] = useState("");
+  const [manualPrivateKeyBalances, setManualPrivateKeyBalances] = useState<{
+    ETH: string;
+    USDC: string;
+    EURC: string;
+    NZDT: string;
+  } | null>(null);
   const [manualBanknoteId, setManualBanknoteId] = useState("");
 
   const t = translations[language as keyof typeof translations];
+
+  useEffect(() => {
+    if (isLoggedIn && address) {
+      setStep(2);
+    } else {
+      setStep(1);
+    }
+  }, [isLoggedIn, address]);
 
   useEffect(() => {
     if (
@@ -207,27 +229,83 @@ export default function Merchant() {
   }, []);
 
   const handleScan = async (data: string) => {
+    setScannedValue(data);
+    setIsLoading(true);
+    setError(null);
     try {
-      setScannedPrivateKey(data);
-      const wallet = new ethers.Wallet(data);
-      
-      if (!web3auth.provider) {
-        throw new Error("Web3Auth provider not available");
+      if (!data) {
+        throw new Error("No scanned value available");
       }
 
-      const usdcBalance = await getTokenBalance(web3auth.provider, wallet.address as Address, tokenAddresses.USDC);
-      const eurcBalance = await getTokenBalance(web3auth.provider, wallet.address as Address, tokenAddresses.EURC);
-      const nzdtBalance = await getTokenBalance(web3auth.provider, wallet.address as Address, tokenAddresses.NZDT);
-      
-      setScannedBalances({
-        USDC: usdcBalance,
-        EURC: eurcBalance,
-        NZDT: nzdtBalance,
-      });
-      setShowConfirmation(true);
-      setStep(3); // Automatically move to the confirmation step
+      const privateKeyHex = data.startsWith("0x") ? data : `0x${data}`;
+
+      // if (!ethers.utils.isHexString(privateKeyHex, 32)) {
+      //   throw new Error("Invalid private key format");
+      // }
+
+      setScannedPrivateKey(privateKeyHex);
+
+      // Get the address from the private key
+      const wallet = new ethers.Wallet(privateKeyHex);
+      setScannedAddress(wallet.address);
+
+      // Fetch balances for the address
+      const balances = await getBalancesForPrivateKey(privateKeyHex);
+      setScannedBalances(balances);
+
+      setStep(3);
     } catch (error) {
-      setError((error as Error).message);
+      console.error("Error in handleScan:", error);
+      setError(`Error processing scanned value: ${(error as Error).message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTokenChange = (token: string) => {
+    setCurrentToken(token);
+  };
+
+  const handleProceed = async () => {
+    console.log("handleProceed called with scanned value:", scannedValue);
+    setIsLoading(true);
+    setError(null);
+    try {
+      if (!scannedValue) {
+        throw new Error("No scanned value available");
+      }
+  
+      console.log("Converting scanned value to hex...");
+      // Convert scanned value to hex if it's not already
+      const privateKeyHex = scannedValue.startsWith("0x") ? scannedValue : `0x${scannedValue}`;
+      console.log("Converted private key:", privateKeyHex);
+  
+      // Check if ethers is properly imported and available
+      if (typeof ethers === 'undefined') {
+        console.error("ethers is not defined. Make sure it's properly imported.");
+        throw new Error("ethers library is not available");
+      }
+  
+      console.log("Checking if private key is valid hex string...");
+      if (!ethers.utils.isHexString(privateKeyHex, 32)) {
+        console.error("Invalid private key format:", privateKeyHex);
+        throw new Error("Invalid private key format");
+      }
+  
+      console.log("Setting scanned private key...");
+      setScannedPrivateKey(privateKeyHex);
+  
+      console.log("Fetching balances for private key...");
+      const balances = await getBalancesForPrivateKey(privateKeyHex);
+      console.log("Fetched balances:", balances);
+  
+      setScannedBalances(balances);
+      setStep(3);
+    } catch (error) {
+      console.error("Error in handleProceed:", error);
+      setError(`Error processing scanned value: ${(error as Error).message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -235,73 +313,42 @@ export default function Merchant() {
     setIsLoading(true);
     setError(null);
     try {
-      if (!web3auth.provider) {
-        throw new Error("Web3Auth provider not available");
-      }
+      const wallet = new ethers.Wallet(manualPrivateKey);
+      const banknoteId = parseInt(wallet.address.slice(2), 16);
+
+      // Fetch balances here in step 3
+      const balances = await getBalancesForPrivateKey(manualPrivateKey);
+      setManualPrivateKeyBalances(balances);
+
+      const tokenSymbol = Object.keys(balances).find(
+        (key) => balances[key as keyof typeof balances] !== "0"
+      ) as "USDC" | "EURC" | "NZDT" | "ETH";
       
-      const result = await redeemBanknote(
-        web3auth.provider,
-        parseInt(manualBanknoteId),
-        BigInt(scannedBalances[selectedToken]), // Convert to BigInt
-        "0x" as `0x${string}`, // Placeholder for signature
-        "Redemption" // Placeholder for description
-      );
-
-      const newTransaction: Transaction = {
-        amount: parseFloat(result.amount),
-        txHash: result.txHash,
-        timestamp: new Date().toISOString(),
-        tokenSymbol: result.tokenSymbol,
-      };
-      setCurrentTransaction(newTransaction);
-      setTransactionHistory((prev) => [newTransaction, ...prev]);
-      setRedeemStatus(
-        `Payment of ${result.amount} ${result.tokenSymbol} received successfully!`
-      );
-      setScannedPrivateKey("");
-      setScannedBalances({ USDC: "", EURC: "", NZDT: "" });
-      setStep(4);
-    } catch (error) {
-      setError((error as Error).message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleManualRedeem = async () => {
-    if (!ethers.isHexString(manualPrivateKey) || manualPrivateKey.length !== 66) {
-      setError("Invalid private key format");
-      return;
-    }
-  
-    const banknoteId = parseInt(manualBanknoteId);
-    if (isNaN(banknoteId) || banknoteId < 0) {
-      setError("Invalid banknote ID");
-      return;
-    }
-  
-    setIsLoading(true);
-    setError(null);
-    try {
-      if (!web3auth.provider) {
-        throw new Error("Web3Auth provider not available");
+      if (!tokenSymbol) {
+        throw new Error("No balance found for redemption");
       }
-  
-      // We need to determine the amount and token type here
-      // For now, let's assume we're using the selected token and its balance
-      const amount = BigInt(parseFloat(scannedBalances[selectedToken]) * 1e18); // Convert to wei
-      const signature = "0x" as `0x${string}`; // Placeholder signature
-      const description = "Manual Redemption"; // Description for the redemption
-  
+
+      const amount = ethers.utils.parseUnits(balances[tokenSymbol].split(' ')[0], 18);
+
+      const messageHash = ethers.utils.solidityKeccak256(
+        ["address", "uint256"],
+        [address, amount]
+      );
+      const messageBytes = ethers.utils.arrayify(messageHash);
+      const signature = await wallet.signMessage(messageBytes);
+
+      // Use a properly formatted description (64 hex digits)
+      const description = "0x626c756500000000000000000000000000000000000000000000000000000000";
+
       const result = await redeemBanknote(
-        web3auth.provider,
+        web3auth.provider!,
         banknoteId,
         amount,
         signature,
         description
       );
-  
-      const newTransaction: Transaction = {
+
+      const newTransaction = {
         amount: parseFloat(result.amount),
         txHash: result.txHash,
         timestamp: new Date().toISOString(),
@@ -313,7 +360,7 @@ export default function Merchant() {
         `Payment of ${result.amount} ${result.tokenSymbol} received successfully!`
       );
       setManualPrivateKey("");
-      setManualBanknoteId("");
+      setManualPrivateKeyBalances(null);
       setStep(4);
     } catch (error) {
       setError((error as Error).message);
@@ -321,6 +368,90 @@ export default function Merchant() {
       setIsLoading(false);
     }
   };
+
+  // const handleScan = async (data: string) => {
+  //   try {
+  //     setScannedPrivateKey(data);
+  //     const wallet = new ethers.Wallet(data);
+
+  //     if (!web3auth.provider) {
+  //       throw new Error("Web3Auth provider not available");
+  //     }
+
+  //     const usdcBalance = await getTokenBalance(web3auth.provider, wallet.address as Address, tokenAddresses.USDC);
+  //     const eurcBalance = await getTokenBalance(web3auth.provider, wallet.address as Address, tokenAddresses.EURC);
+  //     const nzdtBalance = await getTokenBalance(web3auth.provider, wallet.address as Address, tokenAddresses.NZDT);
+
+  //     setScannedBalances({
+  //       USDC: usdcBalance,
+  //       EURC: eurcBalance,
+  //       NZDT: nzdtBalance,
+  //     });
+  //     setShowConfirmation(true);
+  //     setStep(3); // Automatically move to the confirmation step
+  //   } catch (error) {
+  //     setError((error as Error).message);
+  //   }
+  // };
+
+  // const handleRedeem = async () => {
+  //   setIsLoading(true);
+  //   setError(null);
+  //   try {
+  //     if (!web3auth.provider) {
+  //       throw new Error("Web3Auth provider not available");
+  //     }
+
+  //     const result = await redeemBanknote(
+  //       web3auth.provider,
+  //       parseInt(manualBanknoteId),
+  //       BigInt(scannedBalances[selectedToken]), // Convert to BigInt
+  //       "0x" as `0x${string}`, // Placeholder for signature
+  //       "Redemption" // Placeholder for description
+  //     );
+
+  //     const newTransaction: Transaction = {
+  //       amount: parseFloat(result.amount),
+  //       txHash: result.txHash,
+  //       timestamp: new Date().toISOString(),
+  //       tokenSymbol: result.tokenSymbol,
+  //     };
+  //     setCurrentTransaction(newTransaction);
+  //     setTransactionHistory((prev) => [newTransaction, ...prev]);
+  //     setRedeemStatus(
+  //       `Payment of ${result.amount} ${result.tokenSymbol} received successfully!`
+  //     );
+  //     setScannedPrivateKey("");
+  //     setScannedBalances({ USDC: "", EURC: "", NZDT: "" });
+  //     setStep(4);
+  //   } catch (error) {
+  //     setError((error as Error).message);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
+  const handleManualRedeem = async () => {
+    if (
+      !ethers.isHexString(manualPrivateKey) ||
+      manualPrivateKey.length !== 66
+    ) {
+      setError("Invalid private key format");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Move to step 3 without fetching balances yet
+      setStep(3);
+    } catch (error) {
+      setError((error as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   const emailReceipt = () => {
     // Implement email functionality here
@@ -376,46 +507,40 @@ export default function Merchant() {
     switch (step) {
       case 1:
         return (
-          <div className="merchant-step">
-            <label htmlFor="merchantKey" className="merchant-label">
-              {t.merchantIdLabel}
-            </label>
-            <input
-              id="merchantKey"
-              type="text"
-              value={merchantPublicKey}
-              onChange={(e) => setMerchantPublicKey(e.target.value)}
-              className="merchant-input"
-              placeholder={t.merchantIdLabel}
-            />
-            <button
-              onClick={() => setStep(2)}
-              disabled={!merchantPublicKey}
-              className="merchant-button"
-            >
-              {t.next}
+          <div className="welcome-step">
+            <h1>Welcome to Skeuomorphia Merchant Portal</h1>
+            <p>Securely redeem banknotes and manage transactions with ease.</p>
+            <button onClick={login} className="signin-button">
+              Sign In with Web3Auth
             </button>
           </div>
         );
       case 2:
         return (
           <div className="merchant-step">
-            <h3 className="merchant-subtitle">Scan or Enter Private Key</h3>
+            <h3 className="merchant-subtitle">
+              Scan Banknote or Enter Private Key
+            </h3>
             <QRScanner onScan={handleScan} onError={(err) => setError(err)} />
-            <div className="merchant-manual-input">
-              <label htmlFor="manualBanknoteId" className="merchant-label">
-                Enter banknote ID:
+            {scannedValue && (
+              <button onClick={handleProceed} className="proceed-button">
+                Confirm and Proceed
+              </button>
+            )}
+ <div className="merchant-manual-input">
+              <label htmlFor="manualPrivateKey" className="merchant-label">
+                Enter private key:
               </label>
               <input
-                type="number"
-                id="manualBanknoteId"
-                value={manualBanknoteId}
-                onChange={(e) => setManualBanknoteId(e.target.value)}
+                type="text"
+                id="manualPrivateKey"
+                value={manualPrivateKey}
+                onChange={(e) => setManualPrivateKey(e.target.value)}
                 className="merchant-input"
-                placeholder="Enter banknote ID"
+                placeholder="Enter private key"
               />
               <button onClick={handleManualRedeem} className="merchant-button">
-                Submit Banknote ID
+                Proceed with Manual Redemption
               </button>
             </div>
             {scannedPrivateKey && (
@@ -426,40 +551,56 @@ export default function Merchant() {
             )}
           </div>
         );
-      case 3:
-        return (
-          <div className="merchant-step">
-            <h3 className="merchant-title">Review and Confirm Redemption</h3>
-            <div className="merchant-balance-info">
-              {Object.entries(scannedBalances).map(([token, balance]) => (
-                <div key={token} className="merchant-subtitle">
-                  <span>{token} Balance</span>
-                  <span>
-                    {balance} {token}
-                  </span>
-                </div>
-              ))}
+        case 3:
+          return (
+            <div className="merchant-step">
+              <h3 className="merchant-title">Review and Confirm Redemption</h3>
+              <div className="merchant-balance-info">
+              {manualPrivateKeyBalances ? (
+              <div className="merchant-balance-info">
+                {Object.entries(manualPrivateKeyBalances).map(([token, balance]) => (
+                  <div key={token} className={`balance-item ${balance === "0" ? "zero-balance" : ""}`}>
+                    <span>
+                      Balance: {balance}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>Loading balances...</p>
+            )}
+                {Object.entries(scannedBalances).map(([token, balance]) => (
+                  <div
+                    key={token}
+                    className={`balance-item ${
+                      balance === "0" ? "zero-balance" : ""
+                    }`}
+                  >
+       {scannedAddress && (
+              <AddressDisplay
+                address={scannedAddress}
+                balances={scannedBalances}
+                currentToken={currentToken}
+                onTokenChange={handleTokenChange}
+              />
+            )}
+                    <span>
+                     Balance: {balance} {token}
+                    </span>
+                  </div>
+                ))}
+              </div>
+  
+              <button
+                onClick={handleRedeem}
+                disabled={isLoading}
+                className="merchant-button merchant-button-redeem"
+              >
+                {isLoading ? "Processing..." : "Redeem"}
+              </button>
+              {redeemStatus && <p className="redeem-status">{redeemStatus}</p>}
             </div>
-            <select
-              value={selectedToken}
-              onChange={(e) =>
-                setSelectedToken(e.target.value as "USDC" | "EURC" | "NZDT")
-              }
-              className="merchant-select"
-            >
-              <option value="USDC">USDC</option>
-              <option value="EURC">EURC</option>
-              <option value="NZDT">NZDT</option>
-            </select>
-            <button
-              onClick={handleRedeem}
-              disabled={isLoading}
-              className="merchant-button merchant-button-redeem"
-            >
-              {isLoading ? "Processing..." : `Redeem ${selectedToken}`}
-            </button>
-          </div>
-        );
+          );
       case 4:
         return (
           <div className="merchant-step">
@@ -529,20 +670,9 @@ export default function Merchant() {
       <h3 className="merchant-title">{t.settings}</h3>
       <div className="container2"></div>
       <div className="merchant-setting-item">
-        <label htmlFor="currency" className="merchant-label">
-          {t.currency}
-        </label>
-        <select
-          id="currency"
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-          className="merchant-select"
-        >
-          <option value="NZD">NZD</option>
-          <option value="USD">USD</option>
-          <option value="EUR">EUR</option>
-          <option value="GBP">GBP</option>
-        </select>
+        <div className="merchant-address">
+          <p>Merchant Address: {address}</p>
+        </div>
       </div>
       <div className="merchant-setting-item">
         <label htmlFor="language" className="merchant-label">
@@ -575,6 +705,17 @@ export default function Merchant() {
       >
         {t.saveSettings}
       </button>
+      <div className="container2"></div>
+      <button
+        onClick={() => {
+          logout();
+          setStep(1);
+          setShowSettings(false);
+        }}
+        className="merchant-button merchant-button-logout"
+      >
+        Logout
+      </button>
     </div>
   );
 
@@ -583,15 +724,17 @@ export default function Merchant() {
       <div className="merchant-content">
         <div className="merchant-header">
           <h1 className="merchant-title">Skeuomorphia Merchant Terminal</h1>
-          <button
-            onClick={() => {
-              setShowSettings(!showSettings);
-              setShowCameraTest(false);
-            }}
-            className="merchant-settings-toggle"
-          >
-            {showSettings || showCameraTest ? t.back : t.settings}
-          </button>
+          {isLoggedIn && (
+            <button
+              onClick={() => {
+                setShowSettings(!showSettings);
+                setShowCameraTest(false);
+              }}
+              className="merchant-settings-toggle"
+            >
+              {showSettings || showCameraTest ? t.back : t.settings}
+            </button>
+          )}
         </div>
 
         {showSettings ? (
@@ -605,10 +748,11 @@ export default function Merchant() {
                 {[1, 2, 3, 4].map((s) => (
                   <button
                     key={s}
-                    onClick={() => setStep(s)}
+                    onClick={() => isLoggedIn && s !== 1 && setStep(s)}
                     className={`merchant-step-indicator ${
                       s === step ? "active" : ""
-                    }`}
+                    } ${s === 1 && isLoggedIn ? "disabled" : ""}`}
+                    disabled={s === 1 && isLoggedIn}
                   >
                     {s}
                   </button>

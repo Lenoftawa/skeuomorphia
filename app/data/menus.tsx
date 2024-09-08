@@ -24,7 +24,7 @@ export const screenDisconnected: Screen = {
 };
 
 export const screenMainMenu: Screen = {
-  title: "Select amount",
+  title: "Mint a banknote",
   options: [
     {
       left: { message: "<100", actionId: ActionEnum.PROCESS_WITHDRAW_100 },
@@ -39,7 +39,7 @@ export const screenMainMenu: Screen = {
       right: { message: "2>", actionId: ActionEnum.PROCESS_WITHDRAW_2 },
     },
     {
-      left: { message: "<Cancel", actionId: ActionEnum.PROCESS_LOGOUT },
+      left: { message: "<Logout", actionId: ActionEnum.PROCESS_LOGOUT },
       right: { message: "More>", actionId: ActionEnum.GO_MORE_OPTIONS },
     },
   ],
@@ -49,16 +49,16 @@ export const screenMoreOptions: Screen = {
   title: "Select option",
   options: [
     {
-      left: { message: "<Balance", actionId: ActionEnum.GO_BALANCE },
-      right: { message: "Deposit>", actionId: ActionEnum.GO_DEPOSIT },
+      left: { message: "<Deposit", actionId: ActionEnum.GO_DEPOSIT },
+      right: { message: "Withdraw>", actionId: ActionEnum.GO_WITHDRAW },
     },
     {
-      left: { message: "<Withdraw", actionId: ActionEnum.GO_WITHDRAW },
+      left: { message: "<Balance", actionId: ActionEnum.GO_BALANCE },
       right: { message: "Statement>", actionId: ActionEnum.VIEW_BANKNOTES },
     },
     {
-      left: { message: "<Invest", actionId: ActionEnum.GO_INVEST },
-      right: { message: "Currency>", actionId: ActionEnum.GO_CURRENCIES },
+      left: { message: "<Currency", actionId: ActionEnum.GO_CURRENCIES },
+      right: { message: "Invest>", actionId: ActionEnum.GO_INVEST },
     },
     {
       left: { message: "<Cancel", actionId: ActionEnum.GO_MAIN_MENU },
@@ -134,6 +134,7 @@ export const screenBalance: Screen = {
 };
 
 export const screenDeposit: Screen = {
+  
   title: "Deposit Funds",
   options: [
     {
@@ -150,7 +151,7 @@ export const screenDeposit: Screen = {
     },
     {
       left: { message: "<Back", actionId: ActionEnum.GO_MORE_OPTIONS },
-      right: { message: "", actionId: ActionEnum.NO_ACTION },
+      right: { message: "Buy Crypto>", actionId: ActionEnum.GO_MOONPAY },
     },
   ],
 };
@@ -178,15 +179,15 @@ export const screenWithdraw: Screen = {
 };
 
 export const screenStatement: Screen = {
-  title: "Print Statement",
+  title: "Statement Summary",
   options: [
     {
-      left: { message: "Select", actionId: ActionEnum.SELECT_BANKNOTE },
+      left: { message: "", actionId: ActionEnum.NO_ACTION },
       right: { message: "Print", actionId: ActionEnum.PRINT_BANKNOTE },
     },
     {
-      left: { message: "Previous", actionId: ActionEnum.PREVIOUS_BANKNOTE },
-      right: { message: "Next", actionId: ActionEnum.NEXT_BANKNOTE },
+      left: { message: "<Previous", actionId: ActionEnum.PREVIOUS_STATEMENT_PAGE },
+      right: { message: "Next>", actionId: ActionEnum.NEXT_STATEMENT_PAGE },
     },
     {
       left: { message: "", actionId: ActionEnum.NO_ACTION },
@@ -221,6 +222,29 @@ export const screenInvest: Screen = {
   ],
 };
 
+
+export const screenSettings: Screen = {
+  title: "Settings",
+  options: [
+    {
+      left: { message: "", actionId: ActionEnum.NO_ACTION },
+      right: { message: "", actionId: ActionEnum.NO_ACTION },
+    }, 
+    {
+      left: { message: "", actionId: ActionEnum.NO_ACTION },
+      right: { message: "", actionId: ActionEnum.NO_ACTION },
+    },
+    {
+      left: { message: "", actionId: ActionEnum.NO_ACTION },
+      right: { message: "", actionId: ActionEnum.NO_ACTION },
+    },
+    {
+      left: { message: "<Back", actionId: ActionEnum.GO_MORE_OPTIONS },
+      right: { message: "Print Test Banknote>", actionId: ActionEnum.PRINT_TEST_BANKNOTE },
+    },
+  ],
+};
+
 export const screenCurrencies: Screen = {
   title: "Select Currency",
   options: [
@@ -239,28 +263,6 @@ export const screenCurrencies: Screen = {
     {
       left: { message: "<Back", actionId: ActionEnum.GO_MORE_OPTIONS },
       right: { message: "More>", actionId: ActionEnum.NO_ACTION },
-    },
-  ],
-};
-
-export const screenSettings: Screen = {
-  title: "Settings",
-  options: [
-    {
-      left: { message: "", actionId: ActionEnum.NO_ACTION },
-      right: { message: "", actionId: ActionEnum.NO_ACTION },
-    }, 
-    {
-      left: { message: "", actionId: ActionEnum.NO_ACTION },
-      right: { message: "", actionId: ActionEnum.NO_ACTION },
-    },
-    {
-      left: { message: "<Print Test Banknote", actionId: ActionEnum.PRINT_TEST_BANKNOTE },
-      right: { message: "Execute Print>", actionId: ActionEnum.EXECUTE_PRINT_BANKNOTE },
-    },
-    {
-      left: { message: "<Back", actionId: ActionEnum.GO_MORE_OPTIONS },
-      right: { message: "", actionId: ActionEnum.NO_ACTION },
     },
   ],
 };
