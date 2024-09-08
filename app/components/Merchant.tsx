@@ -339,7 +339,7 @@ export default function Merchant() {
 
     // Add logo or header
     doc.setFontSize(22);
-    doc.text("Skeuomorphica Bank", 105, 20, { align: "center" });
+    doc.text("Skeuomorphia Bank", 105, 20, { align: "center" });
 
     doc.setFontSize(18);
     doc.text("Redemption Receipt", 105, 30, { align: "center" });
@@ -364,7 +364,7 @@ export default function Merchant() {
 
     // Add footer
     doc.setFontSize(10);
-    doc.text("Thank you for using Skeuomorphica Bank", 105, 280, {
+    doc.text("Thank you for using Skeuomorphia Bank", 105, 280, {
       align: "center",
     });
 

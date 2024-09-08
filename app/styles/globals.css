@@ -71,7 +71,7 @@ body {
 
 /* ATM Page Background */
 .atm-background {
-  background-image: url("../public/bg1.jpg");
+  background-image: url("../public/Upscaled.png");
   background-size: cover;
   background-position: center;
   height: 100vh;

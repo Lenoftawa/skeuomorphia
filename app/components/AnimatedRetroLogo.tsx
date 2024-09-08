@@ -31,14 +31,14 @@ const AnimatedRetroLogo = () => {
       <div className="scan-line"></div>
       <div style={glitchContainerStyle}>
         <Image 
-          src="/OnlyIcon.png" 
+          src="/MonoChrome.png" 
           alt="Bank Logo"  
           width={200} 
           height={200} 
           style={{ ...glitchStyle, clipPath: 'inset(0 0 50% 0)' }} 
         />
         <Image 
-          src="/OnlyIcon.png" 
+          src="/MonoChrome.png" 
           alt="Bank Logo"  
           width={200} 
           height={200} 

@@ -2,7 +2,7 @@ import { Screen } from "./interfaces";
 import { ActionEnum } from "./action-enums";
 
 export const screenDisconnected: Screen = {
-  title: "Skeuomorphica Bank",
+  title: "Skeuomorphia Bank",
   options: [
     {
       left: { message: "", actionId: ActionEnum.NO_ACTION },

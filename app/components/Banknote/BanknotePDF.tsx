@@ -22,7 +22,7 @@ const BanknotePDF: React.FC<BanknotePDFProps> = ({ amount, currency }) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <View style={styles.section}>
-        <Text>Skeuomorphica Bank</Text>
+        <Text>Skeuomorphia Bank</Text>
         <Text>{amount} {currency}</Text>
       </View>
     </Page>

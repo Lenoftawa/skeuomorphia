@@ -22,7 +22,7 @@
 }
 
 body {
-  background-image:url("../public/bg1.jpg");
+  background-image:url("../public/Upscaled.png");
   background-size: cover;
   overflow:hidden ;
   object-fit: contain;

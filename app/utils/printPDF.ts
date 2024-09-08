@@ -4,7 +4,7 @@ export const printBanknote = async (amount: number, currency: string) => {
   const doc = new jsPDF();
   
   doc.setFontSize(22);
-  doc.text('Skeuomorphica Bank', 105, 20, { align: 'center' });
+  doc.text('Skeuomorphia Bank', 105, 20, { align: 'center' });
   
   doc.setFontSize(18);
   doc.text(`${amount} ${currency}`, 105, 40, { align: 'center' });
