@@ -13,422 +13,425 @@ import {
   Log,
   decodeEventLog,
   ContractFunctionExecutionError,
+  stringToHex,
 } from "viem";
 import { CHAIN_NAMESPACES, IProvider } from "@web3auth/base";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
-import { jsPDF } from "jspdf";
-import QRCode from "qrcode";
+import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
+import { toBeHex } from "ethers";
 
 // Replace with your contract ABI
 const CONTRACT_ABI = [
-  {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "target",
-              "type": "address"
-            }
-          ],
-          "name": "AddressEmptyCode",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "account",
-              "type": "address"
-            }
-          ],
-          "name": "AddressInsufficientBalance",
-          "type": "error"
-        },
-        {
-          "inputs": [],
-          "name": "FailedInnerCall",
-          "type": "error"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "token",
-              "type": "address"
-            }
-          ],
-          "name": "SafeERC20FailedOperation",
-          "type": "error"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "_sender",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "_erc20",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "_amount",
-              "type": "uint256"
-            }
-          ],
-          "name": "Deposited",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "minter",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "erc20",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint32",
-              "name": "id",
-              "type": "uint32"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint8",
-              "name": "denomination",
-              "type": "uint8"
-            }
-          ],
-          "name": "banknoteMinted",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "redeemer",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "erc20",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "amount",
-              "type": "uint256"
-            },
-            {
-              "indexed": false,
-              "internalType": "bytes32",
-              "name": "description",
-              "type": "bytes32"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint32",
-              "name": "id",
-              "type": "uint32"
-            }
-          ],
-          "name": "banknoteRedeemed",
-          "type": "event"
-        },
-        {
-          "anonymous": false,
-          "inputs": [
-            {
-              "indexed": true,
-              "internalType": "address",
-              "name": "_sender",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "address",
-              "name": "_erc20",
-              "type": "address"
-            },
-            {
-              "indexed": false,
-              "internalType": "uint256",
-              "name": "_amount",
-              "type": "uint256"
-            }
-          ],
-          "name": "surplusFundsSkimmed",
-          "type": "event"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_erc20",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_amount",
-              "type": "uint256"
-            }
-          ],
-          "name": "DepositFrom",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_erc20",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_pubkey",
-              "type": "address"
-            },
-            {
-              "internalType": "uint8",
-              "name": "_denomination",
-              "type": "uint8"
-            }
-          ],
-          "name": "mintBanknote",
-          "outputs": [
-            {
-              "internalType": "uint32",
-              "name": "id",
-              "type": "uint32"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint32",
-              "name": "_banknote",
-              "type": "uint32"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_amount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_sig",
-              "type": "bytes"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "_description",
-              "type": "bytes32"
-            }
-          ],
-          "name": "redeemBanknote",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_erc20",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "_amount",
-              "type": "uint256"
-            }
-          ],
-          "name": "skimSurplus",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_owner",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "nonpayable",
-          "type": "constructor"
-        },
-        {
-          "stateMutability": "payable",
-          "type": "receive"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "uint32",
-              "name": "_id",
-              "type": "uint32"
-            }
-          ],
-          "name": "getBanknoteInfo",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            },
-            {
-              "internalType": "uint8",
-              "name": "",
-              "type": "uint8"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [],
-          "name": "getNextId",
-          "outputs": [
-            {
-              "internalType": "uint32",
-              "name": "",
-              "type": "uint32"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_owner",
-              "type": "address"
-            },
-            {
-              "internalType": "address",
-              "name": "_erc20",
-              "type": "address"
-            }
-          ],
-          "name": "getSurplus",
-          "outputs": [
-            {
-              "internalType": "uint256",
-              "name": "",
-              "type": "uint256"
-            }
-          ],
-          "stateMutability": "view",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "bytes",
-              "name": "signature",
-              "type": "bytes"
-            }
-          ],
-          "name": "splitSignature",
-          "outputs": [
-            {
-              "internalType": "bytes32",
-              "name": "r",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "s",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "uint8",
-              "name": "v",
-              "type": "uint8"
-            }
-          ],
-          "stateMutability": "pure",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "string",
-              "name": "str",
-              "type": "string"
-            }
-          ],
-          "name": "stringToAddress",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "pure",
-          "type": "function"
-        },
-        {
-          "inputs": [
-            {
-              "internalType": "address",
-              "name": "_addr",
-              "type": "address"
-            },
-            {
-              "internalType": "bytes",
-              "name": "_signature",
-              "type": "bytes"
-            }
-          ],
-          "name": "verifySignatureOfAddress",
-          "outputs": [
-            {
-              "internalType": "address",
-              "name": "",
-              "type": "address"
-            }
-          ],
-          "stateMutability": "pure",
-          "type": "function"
-        }
-  ];
+{
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "target",
+            "type": "address"
+          }
+        ],
+        "name": "AddressEmptyCode",
+        "type": "error"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "account",
+            "type": "address"
+          }
+        ],
+        "name": "AddressInsufficientBalance",
+        "type": "error"
+      },
+      {
+        "inputs": [],
+        "name": "FailedInnerCall",
+        "type": "error"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "token",
+            "type": "address"
+          }
+        ],
+        "name": "SafeERC20FailedOperation",
+        "type": "error"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "_sender",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "_erc20",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "_amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "Deposited",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "minter",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "erc20",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint32",
+            "name": "id",
+            "type": "uint32"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint8",
+            "name": "denomination",
+            "type": "uint8"
+          }
+        ],
+        "name": "banknoteMinted",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "redeemer",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "erc20",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "indexed": false,
+            "internalType": "bytes32",
+            "name": "description",
+            "type": "bytes32"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint32",
+            "name": "id",
+            "type": "uint32"
+          }
+        ],
+        "name": "banknoteRedeemed",
+        "type": "event"
+      },
+      {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": true,
+            "internalType": "address",
+            "name": "_sender",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "address",
+            "name": "_erc20",
+            "type": "address"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "_amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "surplusFundsSkimmed",
+        "type": "event"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "_erc20",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "DepositFrom",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "_erc20",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "_pubkey",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "name": "_denomination",
+            "type": "uint8"
+          }
+        ],
+        "name": "mintBanknote",
+        "outputs": [
+          {
+            "internalType": "uint32",
+            "name": "id",
+            "type": "uint32"
+          }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint32",
+            "name": "_banknote",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes",
+            "name": "_sig",
+            "type": "bytes"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "_description",
+            "type": "bytes32"
+          }
+        ],
+        "name": "redeemBanknote",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "_erc20",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "_amount",
+            "type": "uint256"
+          }
+        ],
+        "name": "skimSurplus",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "_owner",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+      },
+      {
+        "stateMutability": "payable",
+        "type": "receive"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint32",
+            "name": "_id",
+            "type": "uint32"
+          }
+        ],
+        "name": "getBanknoteInfo",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "name": "",
+            "type": "uint8"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "getNextId",
+        "outputs": [
+          {
+            "internalType": "uint32",
+            "name": "",
+            "type": "uint32"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "_owner",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "_erc20",
+            "type": "address"
+          }
+        ],
+        "name": "getSurplus",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "bytes",
+            "name": "signature",
+            "type": "bytes"
+          }
+        ],
+        "name": "splitSignature",
+        "outputs": [
+          {
+            "internalType": "bytes32",
+            "name": "r",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "s",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint8",
+            "name": "v",
+            "type": "uint8"
+          }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "string",
+            "name": "str",
+            "type": "string"
+          }
+        ],
+        "name": "stringToAddress",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+          }
+        ],
+        "stateMutability": "pure",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "_addr",
+            "type": "address"
+          },
+          {
+            "internalType": "bytes",
+            "name": "_signature",
+            "type": "bytes"
+          }
+        ],
+        "name": "verifySignatureOfAddress",
+        "outputs": [
+          {
+            "internalType": "address",
+            "name": "",
+            "type": "address"
+          }
+        ], 
+        "stateMutability": "pure",
+        "type": "function"
+      }
+];
+
 const CONTRACT_ADDRESS = process.env
   .NEXT_PUBLIC_CONTRACT_ADDRESS as `0x${string}`;
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}`;
@@ -456,9 +459,6 @@ export const web3auth = new Web3Auth({
   chainConfig,
   privateKeyProvider,
 });
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 5000;
 
 async function getClients(provider: IProvider) {
   const publicClient = createPublicClient({
@@ -514,9 +514,7 @@ async function checkContractState(
       args: [userAddress, CONTRACT_ADDRESS],
     });
 
-    console.log(
-      `User balance: ${balance}, Allowance: ${allowance}, Required: ${denomination}`
-    );
+    console.log(`User balance: ${balance}, Allowance: ${allowance}, Required: ${denomination}`);
 
     if (balance < BigInt(denomination) || allowance < BigInt(denomination)) {
       throw new Error("Insufficient balance or allowance for minting");
@@ -528,35 +526,30 @@ async function checkContractState(
 }
 
 let nextBanknoteId = 1;
-
+/*
 function generatePrivateKey(): string {
-  return Array.from({ length: 64 }, () =>
-    Math.floor(Math.random() * 16).toString(16)
-  ).join("");
+  return Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 }
-
+*/
 function formatPrivateKey(key: string): string {
   const groups = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 1];
-  let formatted = "";
+  let formatted = '';
   let index = 0;
   for (const groupLength of groups) {
-    if (formatted) formatted += "-";
+    if (formatted) formatted += '-';
     formatted += key.slice(index, index + groupLength);
     index += groupLength;
   }
   return formatted;
 }
 
+//Len moved PK stuff to caller.
 export async function mintBanknote(
   provider: IProvider,
   erc20Address: Address,
-  denomination: number
-): Promise<{
-  txHash: string;
-  id: number;
-  requestId: string;
-  privateKey: string;
-}> {
+  denomination: number,
+  noteAddress: Address
+): Promise<{ txHash: string; id: number; requestId: string;}> {
   const { publicClient, walletClient } = await getClients(provider);
   const [address] = await walletClient.getAddresses();
 
@@ -573,15 +566,14 @@ export async function mintBanknote(
     console.log(`Token spending approved. Transaction: ${approvalTx}`);
 
     // Mint banknote
-    console.log(
-      `Attempting to mint banknote: erc20=${erc20Address}, address=${address}, denomination=${denomination}`
-    );
+    //++@LenOfTawa - add account (address!!) argument and use that.
+    console.log(`Attempting to mint banknote: erc20=${erc20Address}, address=${noteAddress}, denomination=${denomination}`);
     const { request } = await publicClient.simulateContract({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: "mintBanknote",
       account: address,
-      args: [erc20Address, address, denomination],
+      args: [erc20Address, noteAddress, denomination],
     });
 
     const txHash = await walletClient.writeContract(request);
@@ -597,20 +589,20 @@ export async function mintBanknote(
         log.topics[0] ===
         keccak256(toBytes("banknoteMinted(address,address,uint32,uint8)"))
     ) as Log<bigint, number, false> | undefined;
-
+  
     const id = nextBanknoteId++;
 
     const randomnessRequestedEvent = receipt.logs.find(
       (log) =>
-        log.topics[0] === keccak256(toBytes("RandomnessRequested(uint256)"))
+        log.topics[0] ===
+        keccak256(toBytes("RandomnessRequested(uint256)"))
     ) as Log<bigint, number, false> | undefined;
 
     const requestId = randomnessRequestedEvent?.data ?? "0";
 
-    // Generate a private key (this is a simplified example, in practice you'd use a more secure method)
-    const privateKey = generatePrivateKey();
 
-    return { txHash, id, requestId, privateKey };
+    return { txHash, id, requestId };
+
   } catch (error) {
     console.error("Detailed error in mintBanknote:", error);
     if (error instanceof ContractFunctionExecutionError) {
@@ -626,25 +618,39 @@ export async function mintBanknote(
     } else {
       throw new Error(`Unexpected error during minting: ${String(error)}`);
     }
+
   }
 }
 
 export async function redeemBanknote(
   provider: IProvider,
   banknoteId: number,
-  amount: bigint,
-  signature: `0x${string}`,
-  description: string
+  amount: bigint
+  // signature: `0x${string}`,  // r<<< emoved by Len
+  // description: `0x${string}` // was:string  <<<removed by Len
 ): Promise<{ txHash: string; amount: string; tokenSymbol: string }> {
+
+  
+
   const { publicClient, walletClient } = await getClients(provider);
   const [address] = await walletClient.getAddresses();
+  //@Lenoftawa  fix.
+  // turn private key into an account
+  const banknoteAddress = privateKeyToAccount(stringToHex(bankNotePrivateKey)); 
+  const merchantAccount = address;
+  const description = "0x626c756500000000000000000000000000000000000000000000000000000000"; // Description bytes32
+
+  // get hex value of Merchant's account
+  const signedAddress = await banknoteAddress.signMessage({ 
+    message: merchantAccount,
+  })
 
   const { request } = await publicClient.simulateContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: "redeemBanknote",
     account: address,
-    args: [banknoteId, amount, signature, description],
+    args: [banknoteId, amount, signedAddress, description],
   });
 
   const txHash = await walletClient.writeContract(request);
@@ -850,57 +856,37 @@ export async function approveTokenSpending(
   const { publicClient, walletClient } = await getClients(provider);
   const [address] = await walletClient.getAddresses();
 
-  let retries = 0;
-  while (retries < MAX_RETRIES) {
-    try {
-      const decimals = await getTokenDecimals(provider, tokenAddress);
-      const parsedAmount = parseUnits(amount, decimals);
+  try {
+    const decimals = await getTokenDecimals(provider, tokenAddress);
+    const parsedAmount = parseUnits(amount, decimals);
 
-      const { request } = await publicClient.simulateContract({
-        address: tokenAddress,
-        abi: [
-          {
-            inputs: [
-              { name: "spender", type: "address" },
-              { name: "amount", type: "uint256" },
-            ],
-            name: "approve",
-            outputs: [{ name: "", type: "bool" }],
-            stateMutability: "nonpayable",
-            type: "function",
-          },
-        ],
-        functionName: "approve",
-        account: address,
-        args: [CONTRACT_ADDRESS, parsedAmount],
-      });
+    const { request } = await publicClient.simulateContract({
+      address: tokenAddress,
+      abi: [
+        {
+          inputs: [
+            { name: "spender", type: "address" },
+            { name: "amount", type: "uint256" },
+          ],
+          name: "approve",
+          outputs: [{ name: "", type: "bool" }],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+      ],
+      functionName: "approve",
+      account: address,
+      args: [CONTRACT_ADDRESS, parsedAmount],
+    });
 
-      const txHash = await walletClient.writeContract(request);
+    const txHash = await walletClient.writeContract(request);
+    await publicClient.waitForTransactionReceipt({ hash: txHash });
 
-      // Wait for the transaction with a timeout
-      const receipt = await Promise.race([
-        publicClient.waitForTransactionReceipt({ hash: txHash }),
-        new Promise(
-          (_, reject) =>
-            setTimeout(
-              () => reject(new Error("Transaction confirmation timeout")),
-              60000
-            ) // 60 seconds timeout
-        ),
-      ]);
-
-      return txHash;
-    } catch (error) {
-      console.error(`Attempt ${retries + 1} failed:`, error);
-      if (retries === MAX_RETRIES - 1) {
-        throw error;
-      }
-      retries++;
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-    }
+    return txHash;
+  } catch (error) {
+    console.error("Error in approveTokenSpending:", error);
+    throw error;
   }
-
-  throw new Error("Max retries reached for approveTokenSpending");
 }
 
 export async function generateAndSaveBanknotePDF(
@@ -910,43 +896,37 @@ export async function generateAndSaveBanknotePDF(
   privateKey: string
 ) {
   const doc = new jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: [156, 66], // US currency size (156mm x 66mm)
+    orientation: 'landscape',
+    unit: 'mm',
+    format: [156, 66] // US currency size (156mm x 66mm)
   });
 
   // Add background image
   const img = new Image();
-  img.src = "/banknote_1.png";
-  doc.addImage(img, "PNG", 0, 0, 156, 66);
+  img.src = '/banknote_1.png';
+  doc.addImage(img, 'PNG', 0, 0, 156, 66);
 
-  // Add denomination and token name
+  // Add denomination and token symbol
   doc.setFontSize(24);
   doc.setTextColor(44, 62, 80); // Dark blue color
-  doc.text(`${denomination} ${tokenSymbol}`, 156 - 42, 8 + 24 / 2, {
-    align: "left",
-    baseline: "middle",
-  });
+  doc.text(`${denomination} ${tokenSymbol}`, 156 - 42, 8 + 24/2, { align: 'left', baseline: 'middle' });
 
-  // Add banknote ID
-  doc.setFontSize(14);
-  doc.text(`Banknote ID: ${id}`, 150, 70);
-
-  // Generate QR code for private key
+  // Generate QR code for private key (unformatted)
   const qr = await QRCode.toDataURL(privateKey);
   const qrSize = 36;
-  doc.addImage(qr, "PNG", 156 - 9 - qrSize, 55 / 2, qrSize, qrSize);
+  doc.addImage(qr, 'PNG', 156 - 9 - qrSize, (55 / 2), qrSize, qrSize);
 
-  // Add private key text
+  // Add formatted private key text
+  const formattedPrivateKey = formatPrivateKey(privateKey);
   doc.setFontSize(6);
   doc.setTextColor(168, 168, 168);
-  doc.text(`PK: ${privateKey}`, 10, 66 - 1, { maxWidth: 136 });
+  doc.text(`PK: ${formattedPrivateKey}`, 10, 66 - 5, { maxWidth: 136 });
 
-  //  // Add unique identifier
-  //  doc.setFontSize(8);
-  //  doc.setTextColor(44, 62, 80);
-  //  doc.text(`Unique ID: ${uniqueIdentifier}`, 10, 66 - 10, { maxWidth: 136 });
+  // Add unique identifier
+  doc.setFontSize(8);
+  doc.setTextColor(44, 62, 80);
+  doc.text(`Unique ID: ${id}`, 10, 66 - 10, { maxWidth: 136 });
 
   // Save the PDF
-  doc.save(`banknote${id}_${denomination}${tokenSymbol}.pdf`);
+  doc.save(`banknote_${denomination}_${tokenSymbol}.pdf`);
 }
