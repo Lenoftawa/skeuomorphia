@@ -209,7 +209,7 @@ export default function Merchant() {
   const handleScan = async (data: string) => {
     try {
       setScannedPrivateKey(data);
-      const wallet = new ethers.Wallet(data);
+      const wallet = new ethers.Wallet(data); 
       
       if (!web3auth.provider) {
         throw new Error("Web3Auth provider not available");
@@ -238,13 +238,13 @@ export default function Merchant() {
       if (!web3auth.provider) {
         throw new Error("Web3Auth provider not available");
       }
+
       
       const result = await redeemBanknote(
         web3auth.provider,
         parseInt(manualBanknoteId),
         BigInt(scannedBalances[selectedToken]), // Convert to BigInt
-        "0x" as `0x${string}`, // Placeholder for signature
-        "Redemption" // Placeholder for description
+
       );
 
       const newTransaction: Transaction = {
@@ -290,15 +290,13 @@ export default function Merchant() {
       // We need to determine the amount and token type here
       // For now, let's assume we're using the selected token and its balance
       const amount = BigInt(parseFloat(scannedBalances[selectedToken]) * 1e18); // Convert to wei
-      const signature = "0x" as `0x${string}`; // Placeholder signature
-      const description = "Manual Redemption"; // Description for the redemption
-  
+
       const result = await redeemBanknote(
         web3auth.provider,
         banknoteId,
-        amount,
-        signature,
-        description
+        amount
+        //signature, <moved to redeemBanknote()
+        //description <moved to redeemBanknote()
       );
   
       const newTransaction: Transaction = {
