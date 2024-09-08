@@ -4,6 +4,11 @@ import QRCode from 'qrcode';
 import { mintBanknote, getBanknoteInfo, getTokenSymbol, getTokenAddresses } from '../utils/web3';
 import { web3auth } from '../utils/web3';
 import { Address } from 'viem';
+//+ @LenOfTawa's bits
+import { privateKeyToAddress } from 'viem/accounts'
+import { stringToHex } from 'viem'
+import { generatePrivateKey } from 'viem/accounts'
+
 
 interface BanknotePrinterProps {
   onClose: () => void;
@@ -22,7 +27,7 @@ const BanknotePrinter: React.FC<BanknotePrinterProps> = ({ onClose, onPrint }) =
   const currencies = ['USDC', 'EURC', 'NZDT', 'ETH'];
 
   useEffect(() => {
-    generatePrivateKey();
+    //generatePrivateKey();
     fetchTokenAddresses();
   }, []);
 
@@ -30,13 +35,13 @@ const BanknotePrinter: React.FC<BanknotePrinterProps> = ({ onClose, onPrint }) =
     const addresses = await getTokenAddresses();
     setTokenAddresses(addresses);
   };
-
+/* @LenOfTawa - replaced by viem generated private key.
   const generatePrivateKey = () => {
     const key = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
     setPrivateKey(key);
     setFormattedPrivateKey(formatPrivateKey(key));
   };
-
+  */
   const formatPrivateKey = (key: string) => {
     const groups = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 1];
     let formatted = '';
@@ -62,10 +67,17 @@ const BanknotePrinter: React.FC<BanknotePrinterProps> = ({ onClose, onPrint }) =
         return;
       }
 
+      // @LenOfTawa use viem APIs to generate the burner address as a hex string.
+      const bankNotePrivateKey = generatePrivateKey();
+      const bankNoteAddress = privateKeyToAddress(stringToHex(bankNotePrivateKey)); 
+      setPrivateKey(bankNotePrivateKey);
+      setFormattedPrivateKey(formatPrivateKey(bankNotePrivateKey));
+  
       const { txHash, id, requestId } = await mintBanknote(
         web3auth.provider,
         tokenAddress,
-        parseInt(denomination)
+        parseInt(denomination),
+        bankNoteAddress //@LenOfTawa - now generated here and passed to web3.tx
       );
 
       console.log(`Banknote minted. Transaction: ${txHash}, ID: ${id}, RequestID: ${requestId}`);
