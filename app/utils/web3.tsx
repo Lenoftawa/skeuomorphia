@@ -13,11 +13,13 @@ import {
   Log,
   decodeEventLog,
   ContractFunctionExecutionError,
+  stringToHex,
 } from "viem";
 import { CHAIN_NAMESPACES, IProvider } from "@web3auth/base";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
+import { toBeHex } from "ethers";
 
 // Replace with your contract ABI
 const CONTRACT_ABI = [
@@ -424,7 +426,7 @@ const CONTRACT_ABI = [
             "name": "",
             "type": "address"
           }
-        ],
+        ], 
         "stateMutability": "pure",
         "type": "function"
       }
@@ -541,11 +543,13 @@ function formatPrivateKey(key: string): string {
   return formatted;
 }
 
+//Len moved PK stuff to caller.
 export async function mintBanknote(
   provider: IProvider,
   erc20Address: Address,
-  denomination: number
-): Promise<{ txHash: string; id: number; requestId: string; privateKey: string }> {
+  denomination: number,
+  noteAddress: Address
+): Promise<{ txHash: string; id: number; requestId: string;}> {
   const { publicClient, walletClient } = await getClients(provider);
   const [address] = await walletClient.getAddresses();
 
@@ -562,13 +566,14 @@ export async function mintBanknote(
     console.log(`Token spending approved. Transaction: ${approvalTx}`);
 
     // Mint banknote
-    console.log(`Attempting to mint banknote: erc20=${erc20Address}, address=${address}, denomination=${denomination}`);
+    //++@LenOfTawa - add account (address!!) argument and use that.
+    console.log(`Attempting to mint banknote: erc20=${erc20Address}, address=${noteAddress}, denomination=${denomination}`);
     const { request } = await publicClient.simulateContract({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: "mintBanknote",
       account: address,
-      args: [erc20Address, address, denomination],
+      args: [erc20Address, noteAddress, denomination],
     });
 
     const txHash = await walletClient.writeContract(request);
@@ -584,7 +589,7 @@ export async function mintBanknote(
         log.topics[0] ===
         keccak256(toBytes("banknoteMinted(address,address,uint32,uint8)"))
     ) as Log<bigint, number, false> | undefined;
-
+  
     const id = nextBanknoteId++;
 
     const randomnessRequestedEvent = receipt.logs.find(
@@ -596,9 +601,10 @@ export async function mintBanknote(
     const requestId = randomnessRequestedEvent?.data ?? "0";
 
     // Generate a private key (this is a simplified example, in practice you'd use a more secure method)
-    const privateKey = generatePrivateKey();
+    //const privateKey = generatePrivateKey();
 
-    return { txHash, id, requestId, privateKey };
+    return { txHash, id, requestId };
+
   } catch (error) {
     console.error("Detailed error in mintBanknote:", error);
     if (error instanceof ContractFunctionExecutionError) {
@@ -614,6 +620,7 @@ export async function mintBanknote(
     } else {
       throw new Error(`Unexpected error during minting: ${String(error)}`);
     }
+
   }
 }
 
@@ -624,6 +631,7 @@ export async function redeemBanknote(
   signature: `0x${string}`,
   description: string
 ): Promise<{ txHash: string; amount: string; tokenSymbol: string }> {
+
   const { publicClient, walletClient } = await getClients(provider);
   const [address] = await walletClient.getAddresses();
 
