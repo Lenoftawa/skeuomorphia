@@ -37,7 +37,7 @@ const BalanceScreen: React.FC<BalanceScreenProps> = ({ address, balances, curren
           flex-direction: column;
           align-items: center;
           font-family: "EnterCommand", monospace;
-          color: var(--secondary-color);
+         
         }
         .balance-list {
           margin-top: 20px;
