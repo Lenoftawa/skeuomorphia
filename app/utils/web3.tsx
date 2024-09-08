@@ -600,8 +600,6 @@ export async function mintBanknote(
 
     const requestId = randomnessRequestedEvent?.data ?? "0";
 
-    // Generate a private key (this is a simplified example, in practice you'd use a more secure method)
-    //const privateKey = generatePrivateKey();
 
     return { txHash, id, requestId };
 
@@ -627,20 +625,32 @@ export async function mintBanknote(
 export async function redeemBanknote(
   provider: IProvider,
   banknoteId: number,
-  amount: bigint,
-  signature: `0x${string}`,
-  description: `0x${string}` // was:string
+  amount: bigint
+  // signature: `0x${string}`,  // r<<< emoved by Len
+  // description: `0x${string}` // was:string  <<<removed by Len
 ): Promise<{ txHash: string; amount: string; tokenSymbol: string }> {
+
+  
 
   const { publicClient, walletClient } = await getClients(provider);
   const [address] = await walletClient.getAddresses();
+  //@Lenoftawa  fix.
+  // turn private key into an account
+  const banknoteAddress = privateKeyToAccount(stringToHex(bankNotePrivateKey)); 
+  const merchantAccount = address;
+  const description = "0x626c756500000000000000000000000000000000000000000000000000000000"; // Description bytes32
+
+  // get hex value of Merchant's account
+  const signedAddress = await banknoteAddress.signMessage({ 
+    message: merchantAccount,
+  })
 
   const { request } = await publicClient.simulateContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: "redeemBanknote",
     account: address,
-    args: [banknoteId, amount, signature, description],
+    args: [banknoteId, amount, signedAddress, description],
   });
 
   const txHash = await walletClient.writeContract(request);
