@@ -28,6 +28,104 @@
     -1px -1px 1px #493e2a33 inset, 0 2px 30px #ddd inset;
 }
 
+/* Web3Auth Modal Styles */
+
+#w3a-modal {
+  font-family: 'EnterCommand', monospace !important;
+  background-color: #0a0a2a !important;
+  color: #00ff00 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+#w3a-modal::before {
+  content: '';
+  position: absolute;
+  width: 200vw;
+  height: 200vh;
+  top: -50%;
+  left: -50%;
+  background-image: 
+    radial-gradient(circle, #ffffff 1px, transparent 1px),
+    radial-gradient(circle, #2a2a4a 2px, transparent 2px);
+  background-size: 50px 50px;
+  background-position: 0 0, 25px 25px;
+  transform: rotate(45deg);
+  animation: starfield 1s linear infinite;
+  opacity: 0.2;
+}
+
+@keyframes starfield {
+  from {transform: translateY(0) rotate(45deg);}
+  to {transform: translateY(-100px) rotate(45deg);}
+}
+
+#w3a-modal .w3a-modal__inner {
+  border: 1px solid #d2d2d2 !important;
+  border-radius: 15px !important;
+  box-shadow: 0 0 40px #d2d2d2, inset 0 0 0px #00ff00 !important;
+  backdrop-filter: blur(20px);
+}
+
+#w3a-modal .w3a-modal__header {
+  background-color: #d2d2d2 !important;
+  padding: 20px !important;
+}
+
+#w3a-modal .w3a-header__button {
+  background-color: #e10000 !important;
+  padding: 4px !important;
+}
+
+#w3a-modal .w3a-modal__content {
+  background-color: rgba(20, 0, 51, 0.3) !important;
+  padding: 30px !important;
+}
+
+#w3a-modal h1, #w3a-modal h2, #w3a-modal h3 {
+  font-size: 24px !important;
+  text-shadow: 0 0 10px #00ff00 !important;
+  letter-spacing: 1px !important;
+}
+
+#w3ajs-modal-loader .w3a-modal__loader {
+  background-color: rgba(20, 0, 51, 0.3) !important;
+}
+
+#w3a-modal p, #w3a-modal span {
+  font-size: 20px !important;
+  line-height: 1.6 !important;
+}
+#w3a-modal div {
+  font-size: 20px !important;
+  line-height: 1.6 !important;
+}
+
+#w3a-modal ul {
+  padding: 0px 30px !important;
+  margin: -20px !important;
+}
+
+#w3a-modal button {
+  background-color: #cecece !important;
+  color: #330462 !important;
+  border: 1px solid #d2d2d2 !important;
+  font-family: 'EnterCommand', monospace !important;
+  font-size: 20px !important;
+  padding: 10px 20px !important;
+  margin: 10px !important;
+  transition: all 0.3s ease !important;
+  text-transform: uppercase !important;
+  letter-spacing: 3px !important;
+  box-shadow: 0 0 10px #2a2a4a !important;
+}
+
+#w3a-modal button:hover {
+  background-color: #00ff00 !important;
+  color: #001a33 !important;
+  box-shadow: 0 0 20px #00ff00 !important;
+}
+
 .loader {
   border: 5px solid #f3f3f3;
   border-top: 5px solid #3498db;
@@ -409,6 +507,21 @@ address-display {
   border-radius: 4px;
   background-color: #fff;
   cursor: pointer;
+}
+
+.alert-message {
+  background-color: var(--bg-color-3);
+  color: var(--secondary-color);
+  padding: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 18px;
+  animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .delete-button {
@@ -1273,4 +1386,49 @@ address-display {
     flex-direction: column;
     gap: 0.5rem;
   }
+}
+
+.power-led {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ff0000;
+  margin-left: 10px;
+  transition: background-color 0.3s ease;
+}
+
+/* Custom Wallet Dropdown Styles */
+.wallet-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: var(--bg-color-1);
+  border: 2px solid var(--secondary-color);
+  padding: 10px;
+  margin-top: 5px;
+  z-index: 1001;
+}
+
+
+.wallet-dropdown h3 {
+  color: var(--secondary-color);
+  margin-bottom: 10px;
+}
+
+.wallet-item {
+  margin-bottom: 5px;
+}
+
+.logout-button {
+  background-color: var(--bg-color-3);
+  color: var(--secondary-color);
+  border: 1px solid var(--secondary-color);
+  padding: 5px 10px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.logout-button:hover {
+  background-color: var(--secondary-color);
+  color: var(--bg-color-1);
 }

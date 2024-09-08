@@ -15,7 +15,6 @@ import {
   approveTokenSpending,
   web3auth,
   getTokenSymbol,
-  generateAndSaveBanknotePDF,
 } from "../../utils/web3";
 import {
   screenDisconnected,
@@ -52,12 +51,12 @@ export default function ATM() {
     EURC: string;
     NZDT: string;
   }>({
-    ETH: "0 ETH",
-    USDC: "0 USDC",
-    EURC: "0 EURC",
-    NZDT: "0 NZDT",
+    ETH: "0",
+    USDC: "0",
+    EURC: "0",
+    NZDT: "0",
   });
-  const [currentToken, setCurrentToken] = useState<"ETH" | "USDC" | "EURC" | "NZDT">("ETH");
+  const [currentToken, setCurrentToken] = useState<string>("ETH");
   const [tokenAddresses, setTokenAddresses] = useState<{
     USDC: Address;
     EURC: Address;
@@ -95,21 +94,16 @@ export default function ATM() {
         web3auth.provider,
         address as Address
       );
-      setBalances({
-        ETH: `${allBalances.ETH} ETH`,
-        USDC: `${allBalances.USDC} USDC`,
-        EURC: `${allBalances.EURC} EURC`,
-        NZDT: `${allBalances.NZDT} NZDT`,
-      });
+      setBalances(allBalances);
     } catch (error) {
       console.error("Error fetching token balances:", error);
       setMessageTop("Failed to fetch token balances. Please try again.");
     }
   };
 
-  const handleTokenChange = useCallback((token: "ETH" | "USDC" | "EURC" | "NZDT") => {
+  const handleTokenChange = (token: string) => {
     setCurrentToken(token);
-  }, []);
+  };
 
   const handleMintBanknote = async (
     denomination: number,
@@ -119,11 +113,11 @@ export default function ATM() {
       setMessageTop("Please connect your wallet first.");
       return;
     }
-  
+
     try {
       const tokenAddress = tokenAddresses[tokenSymbol];
       const amount = denomination.toString();
-  
+
       setMessageTop(`Approving ${tokenSymbol} spending...`);
       const approvalTx = await approveTokenSpending(
         web3auth.provider,
@@ -133,27 +127,27 @@ export default function ATM() {
       console.log(
         `${tokenSymbol} spending approved. Transaction: ${approvalTx}`
       );
-  
+
       setMessageTop(`Minting ${denomination} ${tokenSymbol} banknote...`);
-      const { txHash, id, privateKey } = await mintBanknote(
+      const { txHash, id } = await mintBanknote(
         web3auth.provider,
         tokenAddress,
         denomination
       );
       console.log(`Banknote minted with ID: ${id}, Transaction: ${txHash}`);
-  
+
       await generateAndSaveBanknotePDF(
         denomination,
         tokenSymbol,
         id,
-        privateKey
+        "Private key not available" // You might want to handle this differently
       );
-  
+
       setMintedBanknotes((prevBanknotes) => [
         ...prevBanknotes,
         { id, denomination, tokenSymbol },
       ]);
-  
+
       setScreen(screenMainMenu);
       setMessageTop(`Banknote minted successfully: ID ${id}`);
       await getTokenBalances();
@@ -226,15 +220,8 @@ export default function ATM() {
     }
   };
 
-  const playATMButtonSound = () => {
-    const audio = new Audio("/atm-button-sound.wav");
-    audio.play();
-  };
-
   const handleButtonClick = async (action: ActionEnum) => {
     console.log("Action:", action);
-
-    playATMButtonSound();
 
     switch (action) {
       case ActionEnum.PROCESS_LOGIN:

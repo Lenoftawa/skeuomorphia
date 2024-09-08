@@ -38,7 +38,7 @@ const BanknotePrinter: React.FC<BanknotePrinterProps> = ({ onClose, onPrint }) =
   };
 
   const formatPrivateKey = (key: string) => {
-    const groups = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 1];
+    const groups = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 6];
     let formatted = '';
     let index = 0;
     for (const groupLength of groups) {
@@ -62,17 +62,17 @@ const BanknotePrinter: React.FC<BanknotePrinterProps> = ({ onClose, onPrint }) =
         return;
       }
 
-      const { txHash, id, requestId } = await mintBanknote(
-        web3auth.provider,
-        tokenAddress,
-        parseInt(denomination)
-      );
+      // const { txHash, id, requestId } = await mintBanknote(
+      //   web3auth.provider,
+      //   tokenAddress,
+      //   parseInt(denomination)
+      // );
 
-      console.log(`Banknote minted. Transaction: ${txHash}, ID: ${id}, RequestID: ${requestId}`);
+      // console.log(`Banknote minted. Transaction: ${txHash}, ID: ${id}, RequestID: ${requestId}`);
 
       // Wait for the randomness to be fulfilled (you might need to implement a polling mechanism or use events)
-      const banknoteInfo = await getBanknoteInfo(web3auth.provider, id);
-      setUniqueIdentifier(banknoteInfo.uniqueIdentifier);
+      // const banknoteInfo = await getBanknoteInfo(web3auth.provider, 0);
+      // setUniqueIdentifier(banknoteInfo.uniqueIdentifier);
 
       const doc = new jsPDF({
         orientation: 'landscape',
@@ -98,15 +98,15 @@ const BanknotePrinter: React.FC<BanknotePrinterProps> = ({ onClose, onPrint }) =
       // Add formatted private key text
       doc.setFontSize(6);
       doc.setTextColor(168, 168, 168);
-      doc.text(`PK: ${formattedPrivateKey}`, 10, 66 - 5, { maxWidth: 136 });
+      doc.text(`PK: ${formattedPrivateKey}`, 10, 66 - 1, { maxWidth: 136 });
 
-      // Add unique identifier
-      doc.setFontSize(8);
-      doc.setTextColor(44, 62, 80);
-      doc.text(`Unique ID: ${uniqueIdentifier}`, 10, 66 - 10, { maxWidth: 136 });
+      // // Add unique identifier
+      // doc.setFontSize(8);
+      // doc.setTextColor(44, 62, 80);
+      // doc.text(`Unique ID: ${uniqueIdentifier}`, 10, 66 - 10, { maxWidth: 136 });
 
       // Save the PDF
-      doc.save(`banknote_${denomination}_${tokenSymbol}.pdf`);
+      doc.save(`banknote_${denomination}${tokenSymbol}.pdf`);
     } catch (error) {
       console.error("Error generating banknote:", error);
     }
