@@ -526,11 +526,11 @@ async function checkContractState(
 }
 
 let nextBanknoteId = 1;
-
+/*
 function generatePrivateKey(): string {
   return Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 }
-
+*/
 function formatPrivateKey(key: string): string {
   const groups = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 1];
   let formatted = '';
@@ -629,7 +629,7 @@ export async function redeemBanknote(
   banknoteId: number,
   amount: bigint,
   signature: `0x${string}`,
-  description: string
+  description: `0x${string}` // was:string
 ): Promise<{ txHash: string; amount: string; tokenSymbol: string }> {
 
   const { publicClient, walletClient } = await getClients(provider);
