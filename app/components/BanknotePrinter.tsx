@@ -4,7 +4,12 @@ import QRCode from 'qrcode';
 import { mintBanknote, getBanknoteInfo, getTokenSymbol, getTokenAddresses } from '../utils/web3';
 import { web3auth } from '../utils/web3';
 import { Address } from 'viem';
+//+ @LenOfTawa's bits
+import { privateKeyToAddress } from 'viem/accounts'
+import { stringToHex } from 'viem'
+import { generatePrivateKey } from 'viem/accounts'
 
+//1
 interface BanknotePrinterProps {
   onClose: () => void;
   onPrint: () => void;
@@ -22,7 +27,7 @@ const BanknotePrinter: React.FC<BanknotePrinterProps> = ({ onClose, onPrint }) =
   const currencies = ['USDC', 'EURC', 'NZDT', 'ETH'];
 
   useEffect(() => {
-    generatePrivateKey();
+    //generatePrivateKey();
     fetchTokenAddresses();
   }, []);
 
@@ -30,15 +35,15 @@ const BanknotePrinter: React.FC<BanknotePrinterProps> = ({ onClose, onPrint }) =
     const addresses = await getTokenAddresses();
     setTokenAddresses(addresses);
   };
-
+/* @LenOfTawa - replaced by viem generated private key.
   const generatePrivateKey = () => {
     const key = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
     setPrivateKey(key);
     setFormattedPrivateKey(formatPrivateKey(key));
   };
-
+  */
   const formatPrivateKey = (key: string) => {
-    const groups = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 6];
+    const groups = [4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 1];
     let formatted = '';
     let index = 0;
     for (const groupLength of groups) {
@@ -62,17 +67,24 @@ const BanknotePrinter: React.FC<BanknotePrinterProps> = ({ onClose, onPrint }) =
         return;
       }
 
-      // const { txHash, id, requestId } = await mintBanknote(
-      //   web3auth.provider,
-      //   tokenAddress,
-      //   parseInt(denomination)
-      // );
+      // @LenOfTawa use viem APIs to generate the burner address as a hex string.
+      const bankNotePrivateKey = generatePrivateKey();
+      const bankNoteAddress = privateKeyToAddress(stringToHex(bankNotePrivateKey)); 
+      setPrivateKey(bankNotePrivateKey);
+      setFormattedPrivateKey(formatPrivateKey(bankNotePrivateKey));
+  
+      const { txHash, id, requestId } = await mintBanknote(
+        web3auth.provider,
+        tokenAddress,
+        parseInt(denomination),
+        bankNoteAddress //@LenOfTawa - now generated here and passed to web3.tx
+      );
 
-      // console.log(`Banknote minted. Transaction: ${txHash}, ID: ${id}, RequestID: ${requestId}`);
+      console.log(`Banknote minted. Transaction: ${txHash}, ID: ${id}, RequestID: ${requestId}`);
 
       // Wait for the randomness to be fulfilled (you might need to implement a polling mechanism or use events)
-      // const banknoteInfo = await getBanknoteInfo(web3auth.provider, 0);
-      // setUniqueIdentifier(banknoteInfo.uniqueIdentifier);
+      const banknoteInfo = await getBanknoteInfo(web3auth.provider, id);
+      setUniqueIdentifier(banknoteInfo.uniqueIdentifier);
 
       const doc = new jsPDF({
         orientation: 'landscape',
@@ -98,15 +110,15 @@ const BanknotePrinter: React.FC<BanknotePrinterProps> = ({ onClose, onPrint }) =
       // Add formatted private key text
       doc.setFontSize(6);
       doc.setTextColor(168, 168, 168);
-      doc.text(`PK: ${formattedPrivateKey}`, 10, 66 - 1, { maxWidth: 136 });
+      doc.text(`PK: ${formattedPrivateKey}`, 10, 66 - 5, { maxWidth: 136 });
 
-      // // Add unique identifier
-      // doc.setFontSize(8);
-      // doc.setTextColor(44, 62, 80);
-      // doc.text(`Unique ID: ${uniqueIdentifier}`, 10, 66 - 10, { maxWidth: 136 });
+      // Add unique identifier
+      doc.setFontSize(8);
+      doc.setTextColor(44, 62, 80);
+      doc.text(`Unique ID: ${uniqueIdentifier}`, 10, 66 - 10, { maxWidth: 136 });
 
       // Save the PDF
-      doc.save(`banknote_${denomination}${tokenSymbol}.pdf`);
+      doc.save(`banknote_${denomination}_${tokenSymbol}.pdf`);
     } catch (error) {
       console.error("Error generating banknote:", error);
     }
