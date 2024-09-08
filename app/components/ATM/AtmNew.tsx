@@ -4,12 +4,8 @@ import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
 import { Copy } from "lucide-react";
 import AddressDisplay from "../../components/AddressDisplay";
-import BalanceDisplay from "../../components/BalanceDisplay";
-import BalanceScreen from "../BalanceScreen";
 import AnimatedRetroLogo from "../AnimatedRetroLogo";
 import BanknotePrinter from "../BanknotePrinter";
-import DepositScreen from "../DepositScreen";
-import StatementScreen from "../StatementScreen";
 import {
   mintBanknote,
   getBanknoteInfo,
@@ -38,14 +34,11 @@ import {
 import { Address } from "viem";
 import { Screen } from "../../data/interfaces";
 import { ActionEnum } from "../../data/action-enums";
+//+ @LenOfTawa's bits
+import { privateKeyToAddress } from 'viem/accounts'
+import { stringToHex } from 'viem'
+import { generatePrivateKey } from 'viem/accounts'
 
-interface MintInfo {
-  id: number;
-  denomination: number;
-  tokenSymbol: string;
-  txHash: string;
-  timestamp: number;
-}
 
 export default function ATM() {
   const { isLoggedIn, address, balance, login, logout } = useWeb3Auth();
@@ -55,9 +48,6 @@ export default function ATM() {
   const [amount, setAmount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showBanknotePrinter, setShowBanknotePrinter] = useState(false);
-  const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [mintHistory, setMintHistory] = useState<MintInfo[]>([]);
-  const [currentStatementPage, setCurrentStatementPage] = useState(0);
   const [mintedBanknotes, setMintedBanknotes] = useState<
     Array<{ id: number; denomination: number; tokenSymbol: string }>
   >([]);
@@ -67,14 +57,12 @@ export default function ATM() {
     EURC: string;
     NZDT: string;
   }>({
-    NZDT: "0 NZDT",
+    ETH: "0 ETH",
     USDC: "0 USDC",
     EURC: "0 EURC",
-    ETH: "0 ETH",
+    NZDT: "0 NZDT",
   });
-  const [currentToken, setCurrentToken] = useState<
-    "ETH" | "USDC" | "EURC" | "NZDT"
-  >("ETH");
+  const [currentToken, setCurrentToken] = useState<"ETH" | "USDC" | "EURC" | "NZDT">("ETH");
   const [tokenAddresses, setTokenAddresses] = useState<{
     USDC: Address;
     EURC: Address;
@@ -86,31 +74,6 @@ export default function ATM() {
     NZDT: "0x" as Address,
     ETH: "0x" as Address,
   });
-
-  const CurrencyButton = ({ currency }: { currency: "USDC" | "EURC" | "NZDT" | "ETH" }) => (
-    <button
-      onClick={() => handleCurrencySelect(currency)}
-      className={`currency-button ${currentToken === currency ? 'selected' : ''}`}
-      style={{
-        backgroundImage: `url(/images/${currency.toLowerCase()}.png)`,
-        backgroundSize: 'cover',
-        width: '60px',
-        height: '60px',
-        borderRadius: '50%',
-        border: 'none',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        fontSize: '16px',
-        fontWeight: 'bold',
-        color: 'white',
-        textShadow: '1px 1px 2px black',
-        opacity: currentToken === currency ? 1 : 0.7,
-      }}
-    >
-      {currency}
-    </button>
-  );
 
   useEffect(() => {
     const init = async () => {
@@ -128,10 +91,6 @@ export default function ATM() {
   const fetchTokenAddresses = async () => {
     const addresses = await getTokenAddresses();
     setTokenAddresses(addresses);
-  };
-
-  const handleCurrencySelect = (currency: "USDC" | "EURC" | "NZDT" | "ETH") => {
-    setCurrentToken(currency);
   };
 
   const getTokenBalances = async () => {
@@ -153,12 +112,9 @@ export default function ATM() {
     }
   };
 
-  const handleTokenChange = useCallback(
-    (token: "ETH" | "USDC" | "EURC" | "NZDT") => {
-      setCurrentToken(token);
-    },
-    []
-  );
+  const handleTokenChange = useCallback((token: "ETH" | "USDC" | "EURC" | "NZDT") => {
+    setCurrentToken(token);
+  }, []);
 
   const handleMintBanknote = async (
     denomination: number,
@@ -168,11 +124,11 @@ export default function ATM() {
       setMessageTop("Please connect your wallet first.");
       return;
     }
-
+  
     try {
       const tokenAddress = tokenAddresses[tokenSymbol];
       const amount = denomination.toString();
-
+  
       setMessageTop(`Approving ${tokenSymbol} spending...`);
       const approvalTx = await approveTokenSpending(
         web3auth.provider,
@@ -182,27 +138,33 @@ export default function ATM() {
       console.log(
         `${tokenSymbol} spending approved. Transaction: ${approvalTx}`
       );
+      // @LenOfTawa use viem APIs to generate the burner address as a hex string.
+      const bankNotePrivateKey = generatePrivateKey();
+      const bankNoteAddress = privateKeyToAddress(stringToHex(bankNotePrivateKey)); 
+      // setPrivateKey(bankNotePrivateKey);
+      // setFormattedPrivateKey(formatPrivateKey(bankNotePrivateKey));
 
       setMessageTop(`Minting ${denomination} ${tokenSymbol} banknote...`);
       const { txHash, id, privateKey } = await mintBanknote(
         web3auth.provider,
         tokenAddress,
-        denomination
+        denomination,
+        bankNoteAddress //@LenOfTawa - now generated here and passed to web3.tx
       );
       console.log(`Banknote minted with ID: ${id}, Transaction: ${txHash}`);
-
+  
       await generateAndSaveBanknotePDF(
         denomination,
         tokenSymbol,
         id,
         privateKey
       );
-
+  
       setMintedBanknotes((prevBanknotes) => [
         ...prevBanknotes,
         { id, denomination, tokenSymbol },
       ]);
-
+  
       setScreen(screenMainMenu);
       setMessageTop(`Banknote minted successfully: ID ${id}`);
       await getTokenBalances();
@@ -218,25 +180,17 @@ export default function ATM() {
     id: number,
     privateKey: string
   ) => {
-    const uniqueIdentifier = "";
-    const doc = new jsPDF({
-      orientation: "landscape",
-      unit: "mm",
-      format: [156, 66], // US currency size (156mm x 66mm)
-    });
+    const doc = new jsPDF();
 
     // Add background image
     const img = new Image();
     img.src = "/banknote_1.png";
-    doc.addImage(img, "PNG", 0, 0, 156, 66);
+    doc.addImage(img, "PNG", 0, 0, 210, 297);
 
     // Add denomination and token name
     doc.setFontSize(24);
-    doc.setTextColor(44, 62, 80); // Dark blue color
-    doc.text(`${denomination} ${tokenSymbol}`, 156 - 42, 8 + 24 / 2, {
-      align: "left",
-      baseline: "middle",
-    });
+    doc.setTextColor(0, 0, 0);
+    doc.text(`${denomination} ${tokenSymbol}`, 150, 50);
 
     // Add banknote ID
     doc.setFontSize(14);
@@ -244,21 +198,18 @@ export default function ATM() {
 
     // Generate QR code for private key
     const qr = await QRCode.toDataURL(privateKey);
-    const qrSize = 36;
-    doc.addImage(qr, "PNG", 156 - 9 - qrSize, 55 / 2, qrSize, qrSize);
+    doc.addImage(qr, "PNG", 150, 90, 40, 40);
 
     // Add private key text
-    doc.setFontSize(6);
-    doc.setTextColor(168, 168, 168);
-    doc.text(`PK: ${privateKey}`, 10, 66 - 1, { maxWidth: 136 });
-
-    //  // Add unique identifier
-    //  doc.setFontSize(8);
-    //  doc.setTextColor(44, 62, 80);
-    //  doc.text(`Unique ID: ${uniqueIdentifier}`, 10, 66 - 10, { maxWidth: 136 });
+    doc.setFontSize(10);
+    doc.text(`Private Key: ${privateKey}`, 150, 140, { maxWidth: 50 });
 
     // Save the PDF
-    doc.save(`banknote${id}_${denomination}${tokenSymbol}.pdf`);
+    doc.save(`banknote_${id}.pdf`);
+  };
+
+  const handleViewBanknotes = () => {
+    setScreen(screenBanknotes);
   };
 
   const handlePrintBanknote = async (id: number) => {
@@ -323,22 +274,12 @@ export default function ATM() {
       case ActionEnum.GO_DEPOSIT:
         setScreen(screenDeposit);
         break;
-      case ActionEnum.GO_MOONPAY:
-        window.open("https://www.moonpay.com/buy/usdc", "_blank");
-        break;
       case ActionEnum.GO_WITHDRAW:
         setScreen(screenWithdraw);
         break;
       case ActionEnum.GO_STATEMENT:
         setScreen(screenStatement);
         break;
-      case ActionEnum.PREVIOUS_STATEMENT_PAGE:
-        setCurrentStatementPage((prev) => (prev > 0 ? prev - 1 : prev));
-        break;
-      case ActionEnum.NEXT_STATEMENT_PAGE:
-        setCurrentStatementPage((prev) =>
-          prev < Math.ceil(mintHistory.length / 10) - 1 ? prev + 1 : prev
-        );
       case ActionEnum.GO_INVEST:
         setScreen(screenInvest);
         break;
@@ -348,12 +289,12 @@ export default function ATM() {
       case ActionEnum.GO_SETTINGS:
         setScreen(screenSettings);
         break;
-      case ActionEnum.GO_DEPOSIT:
-        setScreen(screenDeposit);
-        break;
       case ActionEnum.PRINT_TEST_BANKNOTE:
         setShowBanknotePrinter(true);
         break;
+        case ActionEnum.EXECUTE_PRINT_BANKNOTE:
+          setShowBanknotePrinter(true);
+          break;
       case ActionEnum.PROCESS_WITHDRAW_100:
       case ActionEnum.PROCESS_WITHDRAW_50:
       case ActionEnum.PROCESS_WITHDRAW_20:
@@ -365,7 +306,7 @@ export default function ATM() {
         ];
         setAmount(withdrawAmount);
         setScreen(screenConfirm);
-        setMessageTop(`Confirm to print banknote worth`);
+        setMessageTop(`Printing a note for ${withdrawAmount} ${currentToken}`);
         break;
       case ActionEnum.MINT_USDC:
       case ActionEnum.MINT_EURC:
@@ -391,13 +332,38 @@ export default function ATM() {
         setAmount(0);
         setMessageTop("");
         break;
+      case ActionEnum.VIEW_BANKNOTES:
+        handleViewBanknotes();
+        break;
       case ActionEnum.PRINT_BANKNOTE:
         if (selectedBanknote) {
           await handlePrintBanknote(selectedBanknote.id);
         }
         break;
     }
-  }
+  };
+
+  const screenBanknotes: Screen = {
+    title: "Your Banknotes",
+    options: [
+      {
+        left: { message: "Select", actionId: ActionEnum.SELECT_BANKNOTE },
+        right: { message: "Print", actionId: ActionEnum.PRINT_BANKNOTE },
+      },
+      {
+        left: { message: "Previous", actionId: ActionEnum.PREVIOUS_BANKNOTE },
+        right: { message: "Next", actionId: ActionEnum.NEXT_BANKNOTE },
+      },
+      {
+        left: { message: "", actionId: ActionEnum.NO_ACTION },
+        right: { message: "", actionId: ActionEnum.NO_ACTION },
+      },
+      {
+        left: { message: "<Back", actionId: ActionEnum.GO_MAIN_MENU },
+        right: { message: "", actionId: ActionEnum.NO_ACTION },
+      },
+    ],
+  };
 
   const [selectedBanknoteIndex, setSelectedBanknoteIndex] = useState(0);
   const selectedBanknote = mintedBanknotes[selectedBanknoteIndex];
@@ -447,21 +413,6 @@ export default function ATM() {
                   fontSize: "28px",
                 }}
               >
-                {alertMessage && (
-                  <div className="alert-message">{alertMessage}</div>
-                )}
-
-                <h2
-                  style={{
-                    textAlign: "center",
-                    marginTop: "0px",
-                    fontSize: "42px",
-                  }}
-                >
-                  {screen.title}
-                  {!isLoggedIn && <AnimatedRetroLogo />}
-                </h2>
-
                 {isLoading ? (
                   <div className="loader"></div>
                 ) : (
@@ -472,68 +423,69 @@ export default function ATM() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          marginTop: "-30px",
+                          marginBottom: "-26px",
                         }}
                       >
-                        <BalanceDisplay
+                        <AddressDisplay
                           address={address}
                           balances={balances}
                           currentToken={currentToken}
                           onTokenChange={handleTokenChange}
                         />
-                        {/* <Copy
+                        <Copy
                           size={32}
                           onClick={copyAddressToClipboard}
                           style={{ marginLeft: "5px", cursor: "pointer" }}
-                        /> */}
+                        />
                       </div>
                     )}
+                    <h2
+                      style={{
+                        textAlign: "center",
+                        marginBottom: "10px",
+                        fontSize: "42px",
+                      }}
+                    >
+                      {screen.title}
+                      {!isLoggedIn && <AnimatedRetroLogo />}
+                    </h2>
 
                     {messageTop && (
-                      <p style={{ textAlign: "center", fontSize: "18px" }}>
+                      <p style={{ textAlign: "center", fontSize: "32px" }}>
                         {messageTop}
                       </p>
                     )}
-
-                    {screen === screenDeposit && (
-                      <DepositScreen
-                        address={address}
-                        balances={balances}
-                        currentToken={currentToken}
-                        onTokenChange={handleTokenChange}
-                      />
-                    )}
-
-                    {screen === screenBalance && (
-                      <BalanceScreen
-                        address={address}
-                        balances={balances}
-                        currentToken={currentToken}
-                        onTokenChange={handleTokenChange}
-                      />
-                    )}
-
-                    {screen === screenStatement && (
-                      <StatementScreen
-                        mintHistory={mintHistory}
-                        currentPage={currentStatementPage}
-                      />
-                    )}
-
-{screen === screenConfirm && (
-                      <div style={{ textAlign: "center" }}>
-                        <p style={{ fontSize: "48px", fontWeight: "bold", margin: "10px 0" }}>
-                          {amount} {currentToken || ""}
-                        </p>
-                        <div style={{ display: "flex", justifyContent: "space-around", margin: "20px 0" }}>
-                          <CurrencyButton currency="USDC" />
-                          <CurrencyButton currency="EURC" />
-                          <CurrencyButton currency="NZDT" />
-                          <CurrencyButton currency="ETH" />
-                        </div>
+                    {screen === screenConfirm && (
+                      <div>
+                        <p>Select token to mint {amount} banknote:</p>
+                        <button
+                          onClick={() =>
+                            handleButtonClick(ActionEnum.MINT_USDC)
+                          }
+                        >
+                          USDC
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleButtonClick(ActionEnum.MINT_EURC)
+                          }
+                        >
+                          EURC
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleButtonClick(ActionEnum.MINT_NZDT)
+                          }
+                        >
+                          NZDT
+                        </button>
+                        <button
+                          onClick={() => handleButtonClick(ActionEnum.MINT_ETH)}
+                        >
+                          ETH
+                        </button>
                       </div>
                     )}
-
                     {showBanknotePrinter && (
                       <BanknotePrinter
                         onClose={() => setShowBanknotePrinter(false)}
