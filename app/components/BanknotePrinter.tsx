@@ -9,7 +9,7 @@ import { privateKeyToAddress } from 'viem/accounts'
 import { stringToHex } from 'viem'
 import { generatePrivateKey } from 'viem/accounts'
 
-
+//1
 interface BanknotePrinterProps {
   onClose: () => void;
   onPrint: () => void;
