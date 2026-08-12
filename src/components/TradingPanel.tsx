@@ -54,7 +54,7 @@ export function TradingPanel({ prices, balance, isConnected, history }: TradingP
           <PriceChart
             data={history[selectedSymbol] || []}
             symbol={selectedSymbol}
-            height={160}
+            height={280}
           />
         )}
 

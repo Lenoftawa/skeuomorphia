@@ -46,7 +46,7 @@ export function MarketData({ prices, loading, error, history }: MarketDataProps)
           <PriceChart
             data={history[selectedSymbol] || []}
             symbol={selectedSymbol}
-            height={140}
+            height={260}
           />
         </div>
       )}

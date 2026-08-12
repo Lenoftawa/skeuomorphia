@@ -762,8 +762,23 @@ html, body {
   box-shadow: inset 0 -1px 0 rgba(255, 176, 0, 0.25);
 }
 
-.chart-controls button.average.active {
-  color: #ffd166;
+.chart-controls button.active.ema { color: #ffb000; border-color: rgba(255,176,0,0.5); }
+.chart-controls button.active.bb { color: #6495ed; border-color: rgba(100,149,237,0.5); }
+.chart-controls button.active.vwap { color: #bb88ff; border-color: rgba(187,136,255,0.5); }
+.chart-controls button.active.vol { color: #00ff88; border-color: rgba(0,255,136,0.4); }
+.chart-controls button.active.rsi { color: #bb88ff; border-color: rgba(187,136,255,0.5); }
+.chart-controls button.active.macd { color: #00d4ff; border-color: rgba(0,212,255,0.5); }
+.chart-controls button.active.follow { color: #00ff88; border-color: rgba(0,255,136,0.5); }
+.chart-controls button.preset { color: #888894; border-color: #33333d; }
+.chart-controls button.preset.active { color: #ff79c6; border-color: rgba(255,121,198,0.5); background: rgba(255,121,198,0.06); }
+.chart-controls button.export { color: #666674; border-color: #292934; font-size: 9px; }
+
+.chart-sep {
+  width: 1px;
+  height: 14px;
+  background: #292934;
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
 .chart-stats {
@@ -776,7 +791,11 @@ html, body {
   font-size: 7px;
   letter-spacing: 0.05em;
   white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+
+.chart-stats::-webkit-scrollbar { display: none; }
 
 .chart-stats b {
   margin-left: 3px;
@@ -788,22 +807,24 @@ html, body {
 .chart-legend {
   margin-left: auto;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .chart-legend i {
   width: 10px;
   height: 2px;
   display: inline-block;
+  margin-left: 6px;
 }
 
-.chart-legend i.price {
-  background: #00ff88;
-}
+.chart-legend i:first-child { margin-left: 0; }
 
-.chart-legend i.average {
-  margin-left: 4px;
-  background: #ffb000;
-}
+.chart-legend i.ema12 { background: #ffb000; }
+.chart-legend i.ema26 { background: #00d4ff; }
+.chart-legend i.bb { background: #6495ed; }
+.chart-legend i.vwap { background: #bb88ff; }
+.chart-legend i.rsi { background: #bb88ff; }
+.chart-legend i.macd { background: #00d4ff; }
 
 @media (max-width: 520px) {
   .chart-toolbar {

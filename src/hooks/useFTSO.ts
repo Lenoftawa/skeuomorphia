@@ -11,7 +11,7 @@ export interface PriceHistoryPoint {
 
 export type PriceHistory = Record<string, PriceHistoryPoint[]>;
 
-const MAX_HISTORY_POINTS = 60;
+const MAX_HISTORY_POINTS = 500;
 
 export function useFTSO(intervalMs: number = 5000) {
   const [prices, setPrices] = useState<PriceFeed[]>([]);
