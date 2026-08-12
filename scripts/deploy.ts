@@ -40,8 +40,8 @@ async function main() {
   console.log("FLRD asset policy set (1–1000 FLRD)");
 
   // 5. Configure FXRP as a supported asset if the address is available
-  // FXRP on Coston2: 0xAd552A648C74D49E10027AB8a618A3ad4901c5bE
-  const fxrpAddress = process.env.NEXT_PUBLIC_FXRP_ADDRESS || "0xAd552A648C74D49E10027AB8a618A3ad4901c5bE";
+  // FTestXRP on Coston2: 0x0b6A3645c240605887a5532109323A3E12273dc7
+  const fxrpAddress = process.env.NEXT_PUBLIC_FXRP_ADDRESS || "0x0b6A3645c240605887a5532109323A3E12273dc7";
   try {
     const fxrpPolicyTx = await assetRegistry.setAssetPolicy(
       fxrpAddress,

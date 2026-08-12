@@ -71,7 +71,7 @@ export const SUPPORTED_ASSETS: SupportedAsset[] = [
   },
   {
     symbol: "FXRP",
-    address: process.env.NEXT_PUBLIC_FXRP_ADDRESS || "0xAd552A648C74D49E10027AB8a618A3ad4901c5bE",
+    address: process.env.NEXT_PUBLIC_FXRP_ADDRESS || "0x0b6A3645c240605887a5532109323A3E12273dc7",
     decimals: 6,
     kind: "fasset",
     underlying: "XRP",

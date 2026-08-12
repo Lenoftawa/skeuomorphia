@@ -53,7 +53,7 @@ During the hackathon program:
 | AssetRegistry | `0xf869F7b8a288229A2AE944CB43E462617183B6c6` | Deployed |
 | BearerNoteEscrow | `0x9A96CB8C12AbB76757c459E6F2F21caB13Cd184d` | Deployed |
 | StableCoin (FLRD) | `0x374fb73CC8a40167D3D393223B1AF82ac2A26A10` | Deployed |
-| FXRP (Flare FAsset) | `0xAd552A648C74D49E10027AB8a618A3ad4901c5bE` | Official Flare contract |
+| FXRP (Flare FAsset) | `0x0b6A3645c240605887a5532109323A3E12273dc7` | Official Flare contract (FTestXRP) |
 
 **Network:** Coston2 Testnet (Chain ID: 114)
 **RPC:** `https://coston2-api.flare.network/ext/bc/C/rpc`
