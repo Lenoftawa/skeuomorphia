@@ -1,6 +1,5 @@
 "use client";
 
-import { ethers } from "ethers";
 import type { useEpochs } from "@/hooks/useEpochs";
 
 interface EpochExplorerPanelProps {
@@ -8,7 +7,7 @@ interface EpochExplorerPanelProps {
 }
 
 export function EpochExplorerPanel({ epochs }: EpochExplorerPanelProps) {
-  const { epochInfo, providers, loading, error, refresh } = epochs;
+  const { epochInfo, loading, error, refresh } = epochs;
 
   const fmtDuration = (seconds: number) => {
     if (!seconds) return "—";
@@ -43,35 +42,22 @@ export function EpochExplorerPanel({ epochs }: EpochExplorerPanelProps) {
           </div>
         )}
 
-        {epochInfo && (
-          <div className="bg-terminal-panel border border-terminal-border p-2">
-            <div className="text-terminal-white-dim text-[10px]">DATA PROVIDERS</div>
-            <div className="text-terminal-green text-2xl font-bold glow-green">{epochInfo.dataProviderCount}</div>
-          </div>
+        {loading && !epochInfo && (
+          <div className="text-terminal-amber text-[10px] animate-pulse">FETCHING EPOCH DATA...</div>
         )}
 
-        <div>
-          <div className="text-terminal-amber text-[10px] font-bold mb-1">TOP DATA PROVIDERS</div>
-          {providers.length === 0 ? (
-            <div className="text-terminal-white-dim text-[10px]">NO PROVIDERS LOADED</div>
-          ) : (
-            <div className="space-y-1">
-              {providers.slice(0, 15).map((p, i) => (
-                <div key={p.address} className="flex justify-between items-center bg-terminal-panel border border-terminal-border px-2 py-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-terminal-white-dim text-[8px]">#{i + 1}</span>
-                    <span className="text-terminal-white text-[10px]">{p.name || p.symbol || p.address.slice(0, 10)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-terminal-amber text-[10px]">{Number(ethers.formatEther(p.votePower)).toFixed(0)} VP</span>
-                    <span className={`text-[8px] ${p.active ? "text-terminal-green" : "text-terminal-red"}`}>
-                      {p.active ? "●" : "○"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        {!loading && !epochInfo && !error && (
+          <div className="text-terminal-white-dim text-[10px]">NO EPOCH DATA AVAILABLE</div>
+        )}
+
+        <div className="bg-terminal-panel border border-terminal-border p-2">
+          <div className="text-terminal-white-dim text-[10px] mb-1">FTSOv2 SYSTEM</div>
+          <div className="text-terminal-white text-[10px] space-y-1">
+            <div>• Block-latency feeds update every ~1.8s</div>
+            <div>• Voting epoch: {epochInfo ? fmtDuration(epochInfo.votingEpochDuration) : "—"}</div>
+            <div>• Reward epoch: {epochInfo ? fmtDuration(epochInfo.rewardEpochDuration) : "—"}</div>
+            <div className="text-terminal-white-dim">Data provider enumeration is not available on FTSOv2 FtsoManager.</div>
+          </div>
         </div>
       </div>
     </div>

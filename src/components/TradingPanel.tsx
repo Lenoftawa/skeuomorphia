@@ -1,26 +1,75 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { ethers } from "ethers";
 import type { PriceFeed } from "@/lib/types";
 import type { PriceHistory } from "@/hooks/useFTSO";
 import { formatTokenAmount } from "@/lib/atm";
 import { PriceChart } from "./PriceChart";
 import { TokenLogo } from "./TokenLogo";
+import { DEPLOYED_ADDRESSES, ERC20_ABI, getSimpleSwapContract } from "@/lib/contracts";
 
 interface TradingPanelProps {
   prices: PriceFeed[];
   balance: number;
   isConnected: boolean;
   history: PriceHistory;
+  signer: ethers.JsonRpcSigner | null;
 }
 
-export function TradingPanel({ prices, balance, isConnected, history }: TradingPanelProps) {
+export function TradingPanel({ prices, balance, isConnected, history, signer }: TradingPanelProps) {
   const [selectedSymbol, setSelectedSymbol] = useState("FLR");
   const [side, setSide] = useState<"BUY" | "SELL">("BUY");
   const [amount, setAmount] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastTxHash, setLastTxHash] = useState<string | null>(null);
 
   const selectedPrice = prices.find((p) => p.symbol === selectedSymbol);
   const orderValue = selectedPrice && amount ? parseFloat(amount) * selectedPrice.price : 0;
+
+  // Check if this symbol is swappable via SimpleSwap
+  const swapTokenSymbol = selectedSymbol === "FLR" || selectedSymbol === "WFLR" ? "FLRD" : selectedSymbol === "XRP" ? "FXRP" : null;
+  const canExecute = swapTokenSymbol !== null && !!DEPLOYED_ADDRESSES.simpleSwap && !!signer;
+
+  const handleExecute = useCallback(async () => {
+    if (!signer || !canExecute || !swapTokenSymbol) return;
+    const amt = parseFloat(amount);
+    if (isNaN(amt) || amt <= 0) return;
+    setBusy(true);
+    setError(null);
+    setLastTxHash(null);
+    try {
+      const fromSymbol = side === "BUY" ? "FLRD" : swapTokenSymbol;
+      const toSymbol = side === "BUY" ? swapTokenSymbol : "FLRD";
+      const fromToken = fromSymbol === "FLRD" ? DEPLOYED_ADDRESSES.stableCoin : DEPLOYED_ADDRESSES.fxrp;
+      const toToken = toSymbol === "FLRD" ? DEPLOYED_ADDRESSES.stableCoin : DEPLOYED_ADDRESSES.fxrp;
+      if (!fromToken || !toToken) {
+        setError("Token address not configured");
+        return;
+      }
+      const amountIn = ethers.parseUnits(amt.toString(), 6);
+      // Approve
+      const token = new ethers.Contract(fromToken, ERC20_ABI, signer);
+      const allowance = await token.allowance(await signer.getAddress(), DEPLOYED_ADDRESSES.simpleSwap);
+      if (allowance < amountIn) {
+        const approveTx = await token.approve(DEPLOYED_ADDRESSES.simpleSwap, ethers.MaxUint256);
+        await approveTx.wait();
+      }
+      // Swap
+      const swap = getSimpleSwapContract(signer, DEPLOYED_ADDRESSES.simpleSwap);
+      const expectedOut = await swap.getQuote.staticCall(fromToken, toToken, amountIn);
+      const minAmountOut = (expectedOut * 99n) / 100n;
+      const tx = await swap.swap(fromToken, toToken, amountIn, minAmountOut);
+      await tx.wait();
+      setLastTxHash(tx.hash);
+      setAmount("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Trade failed");
+    } finally {
+      setBusy(false);
+    }
+  }, [signer, canExecute, swapTokenSymbol, side, amount]);
 
   return (
     <div className="terminal-panel terminal-panel-grad h-full flex flex-col">
@@ -83,7 +132,7 @@ export function TradingPanel({ prices, balance, isConnected, history }: TradingP
           </div>
         )}
 
-        {/* Side Toggle (view only) */}
+        {/* Side Toggle */}
         <div className="flex gap-2">
           <button
             className={`atm-button flex-1 ${side === "BUY" ? "border-terminal-green text-terminal-green glow-green" : ""}`}
@@ -99,9 +148,9 @@ export function TradingPanel({ prices, balance, isConnected, history }: TradingP
           </button>
         </div>
 
-        {/* Amount Input (quote only) */}
+        {/* Amount Input */}
         <div>
-          <div className="text-terminal-white-dim text-[10px] mb-1">AMOUNT ({selectedSymbol}) — QUOTE PREVIEW</div>
+          <div className="text-terminal-white-dim text-[10px] mb-1">AMOUNT ({selectedSymbol})</div>
           <input
             type="number"
             value={amount}
@@ -123,14 +172,37 @@ export function TradingPanel({ prices, balance, isConnected, history }: TradingP
           </div>
         </div>
 
-        {/* Execution unavailable notice */}
-        <div className="border border-terminal-amber/40 bg-terminal-amber/10 p-2 text-[10px] text-terminal-amber">
-          [VIEW-ONLY] Spot execution via SparkDEX (Uniswap V3) is not yet wired.
-          Prices are live FTSOv2 oracle reads. Use the ATM [F2] to cash out
-          supported assets into printable bearer notes.
-        </div>
-        <button className="atm-button w-full opacity-50" disabled>
-          [ EXECUTE {side} ORDER — UNAVAILABLE ]
+        {/* Execution status */}
+        {canExecute ? (
+          <div className="border border-terminal-green/40 bg-terminal-green/10 p-2 text-[10px] text-terminal-green">
+            [LIVE] Spot execution via SimpleSwap AMM (0.3% fee).
+            {side === "BUY" ? ` Buy ${selectedSymbol} with FLRD.` : ` Sell ${selectedSymbol} for FLRD.`}
+          </div>
+        ) : (
+          <div className="border border-terminal-amber/40 bg-terminal-amber/10 p-2 text-[10px] text-terminal-amber">
+            [VIEW-ONLY] Spot execution available for FLRD↔FXRP pairs via SimpleSwap.
+            Select FLR/XRP to enable execution. Prices are live FTSOv2 oracle reads.
+          </div>
+        )}
+
+        {error && <div className="text-terminal-red text-[10px] glow-red">ERROR: {error}</div>}
+        {lastTxHash && (
+          <a
+            href={`https://coston2-explorer.flare.network/tx/${lastTxHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-terminal-green text-[10px] glow-green hover:underline block"
+          >
+            ✓ TRADE EXECUTED — VIEW TX ↗
+          </a>
+        )}
+
+        <button
+          className={`atm-button w-full ${canExecute ? "border-terminal-green text-terminal-green" : "opacity-50"}`}
+          disabled={!canExecute || busy || !amount}
+          onClick={handleExecute}
+        >
+          {busy ? "EXECUTING..." : canExecute ? `[ EXECUTE ${side} ORDER ]` : `[ EXECUTE — SELECT FLR/XRP ]`}
         </button>
       </div>
     </div>

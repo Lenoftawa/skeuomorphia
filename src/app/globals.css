@@ -422,8 +422,8 @@ html, body {
 .tab-item {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
+  gap: 5px;
+  padding: 4px 10px;
   background: transparent;
   border-right: 1px solid rgba(255, 255, 255, 0.03);
   color: #555560;
@@ -439,15 +439,33 @@ html, body {
   position: relative;
 }
 
+.tab-icon {
+  font-size: 11px;
+  opacity: 0.7;
+  transition: all 0.15s ease;
+}
+
 .tab-item:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.03);
   color: #8888a0;
 }
 
+.tab-item:hover .tab-icon {
+  opacity: 1;
+  color: #ffb000;
+}
+
 .tab-item.active {
-  background: linear-gradient(180deg, rgba(255, 176, 0, 0.06) 0%, transparent 100%);
+  background: linear-gradient(180deg, rgba(255, 176, 0, 0.08) 0%, transparent 100%);
   color: #ffb000;
   font-weight: 700;
+  text-shadow: 0 0 6px rgba(255, 176, 0, 0.5);
+}
+
+.tab-item.active .tab-icon {
+  opacity: 1;
+  color: #ffb000;
+  text-shadow: 0 0 6px rgba(255, 176, 0, 0.5);
 }
 
 .tab-item.active::after {
@@ -458,7 +476,7 @@ html, body {
   right: 0;
   height: 2px;
   background: linear-gradient(90deg, transparent, #ffb000, transparent);
-  box-shadow: 0 0 6px rgba(255, 176, 0, 0.5);
+  box-shadow: 0 0 10px rgba(255, 176, 0, 0.7);
 }
 
 .tab-item.drag-over-tab {

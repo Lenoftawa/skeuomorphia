@@ -14,6 +14,7 @@ const MarketData = dynamic(() => import("@/components/MarketData").then((module)
 const ATMPanel = dynamic(() => import("@/components/ATMPanel").then((module) => module.ATMPanel), { loading: PanelLoading });
 const TradingPanel = dynamic(() => import("@/components/TradingPanel").then((module) => module.TradingPanel), { loading: PanelLoading });
 const Portfolio = dynamic(() => import("@/components/Portfolio").then((module) => module.Portfolio), { loading: PanelLoading });
+const TransactionsPanel = dynamic(() => import("@/components/TransactionsPanel").then((module) => module.TransactionsPanel), { loading: PanelLoading });
 const CommandLine = dynamic(() => import("@/components/CommandLine").then((module) => module.CommandLine), { loading: PanelLoading });
 const DelegationPanel = dynamic(() => import("@/components/DelegationPanel").then((module) => module.DelegationPanel), { loading: PanelLoading });
 const PriceAlertsPanel = dynamic(() => import("@/components/PriceAlertsPanel").then((module) => module.PriceAlertsPanel), { loading: PanelLoading });
@@ -26,7 +27,6 @@ const EpochExplorerPanel = dynamic(() => import("@/components/EpochExplorerPanel
 const ExplorerPanel = dynamic(() => import("@/components/ExplorerPanel").then((module) => module.ExplorerPanel), { loading: PanelLoading });
 const NFTGalleryPanel = dynamic(() => import("@/components/NFTGalleryPanel").then((module) => module.NFTGalleryPanel), { loading: PanelLoading });
 const SwapPanel = dynamic(() => import("@/components/SwapPanel").then((module) => module.SwapPanel), { loading: PanelLoading });
-import { DemoBanner } from "@/components/DemoBanner";
 import { useWallet } from "@/hooks/useWallet";
 import { useFTSO, type PriceHistory } from "@/hooks/useFTSO";
 import { useATM } from "@/hooks/useATM";
@@ -201,6 +201,7 @@ Contracts: StableCoin (FLRD) + CashEscrow + FTSO`;
           balance={wallet.balance}
           isConnected={wallet.isConnected}
           history={history}
+          signer={wallet.signer}
         />
       );
     case "portfolio":
@@ -218,14 +219,9 @@ Contracts: StableCoin (FLRD) + CashEscrow + FTSO`;
       );
     case "transactions":
       return (
-        <Portfolio
+        <TransactionsPanel
           address={wallet.address}
-          balance={wallet.balance}
-          nativeBalance={wallet.nativeBalance}
-          assetBalances={wallet.assetBalances}
-          prices={prices}
           isConnected={wallet.isConnected}
-          onFaucet={wallet.claimFaucet}
           transactions={atm.transactions}
         />
       );
@@ -254,43 +250,35 @@ Contracts: StableCoin (FLRD) + CashEscrow + FTSO`;
       );
     case "governance":
       return (
-        <DemoBanner title="GOVERNANCE" note="Mock proposals; no on-chain voting yet.">
-          <GovernancePanel
-            isConnected={wallet.isConnected}
-            governance={governance}
-            onConnect={wallet.connect}
-          />
-        </DemoBanner>
+        <GovernancePanel
+          isConnected={wallet.isConnected}
+          governance={governance}
+          onConnect={wallet.connect}
+        />
       );
     case "fassets":
       return (
-        <DemoBanner title="F-ASSETS" note="Mint/redeem not wired to the FAssets AssetManager.">
-          <FAssetsPanel
-            isConnected={wallet.isConnected}
-            fassets={fassets}
-            onConnect={wallet.connect}
-          />
-        </DemoBanner>
+        <FAssetsPanel
+          isConnected={wallet.isConnected}
+          fassets={fassets}
+          onConnect={wallet.connect}
+        />
       );
     case "flaredrop":
       return (
-        <DemoBanner title="FLAREDROP" note="Claim is simulated; no on-chain reward claim.">
-          <FlareDropPanel
-            isConnected={wallet.isConnected}
-            flaredrop={flaredrop}
-            onConnect={wallet.connect}
-          />
-        </DemoBanner>
+        <FlareDropPanel
+          isConnected={wallet.isConnected}
+          flaredrop={flaredrop}
+          onConnect={wallet.connect}
+        />
       );
     case "staking":
       return (
-        <DemoBanner title="rFLR STAKING" note="Staking is simulated; no on-chain staking.">
-          <StakingPanel
-            isConnected={wallet.isConnected}
-            staking={staking}
-            onConnect={wallet.connect}
-          />
-        </DemoBanner>
+        <StakingPanel
+          isConnected={wallet.isConnected}
+          staking={staking}
+          onConnect={wallet.connect}
+        />
       );
     case "epochs":
       return <EpochExplorerPanel epochs={epochs} />;
@@ -305,25 +293,20 @@ Contracts: StableCoin (FLRD) + CashEscrow + FTSO`;
       );
     case "nft":
       return (
-        <DemoBanner title="NFT GALLERY" note="Metadata is simulated.">
-          <NFTGalleryPanel
-            isConnected={wallet.isConnected}
-            address={wallet.address}
-            nfts={nfts}
-            onConnect={wallet.connect}
-          />
-        </DemoBanner>
+        <NFTGalleryPanel
+          isConnected={wallet.isConnected}
+          address={wallet.address}
+          nfts={nfts}
+          onConnect={wallet.connect}
+        />
       );
     case "swap":
       return (
-        <DemoBanner title="DEX SWAP" note="No router wired; swap is simulated.">
-          <SwapPanel
-            isConnected={wallet.isConnected}
-            prices={prices}
-            swap={swap}
-            onConnect={wallet.connect}
-          />
-        </DemoBanner>
+        <SwapPanel
+          isConnected={wallet.isConnected}
+          swap={swap}
+          onConnect={wallet.connect}
+        />
       );
     case "command":
       return <CommandLine onCommand={handleCommand} />;
@@ -461,7 +444,7 @@ export default function TerminalPage() {
   const epochs = useEpochs();
   const explorer = useExplorer();
   const nfts = useNFTs(wallet.address);
-  const swap = useSwap(prices);
+  const swap = useSwap(prices, wallet.signer);
 
   useEffect(() => {
     if (wallet.isConnected) {

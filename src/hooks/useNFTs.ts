@@ -5,11 +5,9 @@ import { ethers } from "ethers";
 import { FLARE_NETWORKS, DEFAULT_NETWORK } from "@/lib/flare";
 
 const ERC721_ABI = [
-  "function balanceOf(address) view returns (uint256)",
-  "function tokenOfOwnerByIndex(address, uint256) view returns (uint256)",
-  "function tokenURI(uint256) view returns (string)",
   "function name() view returns (string)",
   "function symbol() view returns (string)",
+  "function tokenURI(uint256) view returns (string)",
 ];
 
 export interface NFTItem {
@@ -20,12 +18,6 @@ export interface NFTItem {
   tokenURI: string;
   imageUrl: string | null;
 }
-
-const KNOWN_NFT_COLLECTIONS: Record<string, string> = {
-  coston2: "",
-  flare: "",
-  songbird: "",
-};
 
 export function useNFTs(address: string | null) {
   const [nfts, setNfts] = useState<NFTItem[]>([]);
@@ -38,48 +30,69 @@ export function useNFTs(address: string | null) {
     setLoading(true);
     setError(null);
     try {
-      const collectionAddr = KNOWN_NFT_COLLECTIONS[DEFAULT_NETWORK];
-      if (!collectionAddr) {
+      // Use the explorer API to fetch ERC721 token transfers for this address
+      // The Coston2 explorer supports an Etherscan-compatible API
+      const url = `${network.explorerApi}?module=account&action=tokennfttx&address=${addr}&page=1&offset=100&sort=desc`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (data.status !== "1" || !Array.isArray(data.result)) {
         setNfts([]);
         return;
       }
-      const contract = new ethers.Contract(collectionAddr, ERC721_ABI, provider);
-      const balance = await contract.balanceOf(addr);
-      const count = Number(balance);
-      if (count === 0) {
-        setNfts([]);
-        return;
-      }
+
+      // Filter for incoming transfers (where this address is the recipient)
+      // and deduplicate by (contractAddress, tokenId)
+      const seen = new Set<string>();
       const items: NFTItem[] = [];
-      const maxFetch = Math.min(count, 20);
-      for (let i = 0; i < maxFetch; i++) {
-        try {
-          const tokenId = await contract.tokenOfOwnerByIndex(addr, i);
-          let tokenURI = "";
-          let imageUrl: string | null = null;
+      const contractsToQuery = new Map<string, { name: string; symbol: string }>();
+
+      for (const tx of data.result) {
+        if (tx.to?.toLowerCase() !== addr.toLowerCase()) continue;
+        const key = `${tx.contractAddress}-${tx.tokenID}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        // Try to get contract name/symbol from cache or chain
+        let name = "";
+        let symbol = "";
+        if (contractsToQuery.has(tx.contractAddress)) {
+          const cached = contractsToQuery.get(tx.contractAddress)!;
+          name = cached.name;
+          symbol = cached.symbol;
+        } else {
           try {
-            tokenURI = await contract.tokenURI(tokenId);
-            if (tokenURI.startsWith("ipfs://")) {
-              imageUrl = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
-            } else if (tokenURI.startsWith("http")) {
-              imageUrl = tokenURI;
-            }
-          } catch {}
-          let name = "";
-          let symbol = "";
-          try { name = await contract.name(); } catch {}
-          try { symbol = await contract.symbol(); } catch {}
-          items.push({
-            contractAddress: collectionAddr,
-            tokenId,
-            name,
-            symbol,
-            tokenURI,
-            imageUrl,
-          });
-        } catch {
-          continue;
+            const contract = new ethers.Contract(tx.contractAddress, ERC721_ABI, provider);
+            [name, symbol] = await Promise.all([
+              contract.name().catch(() => ""),
+              contract.symbol().catch(() => ""),
+            ]);
+            contractsToQuery.set(tx.contractAddress, { name, symbol });
+          } catch {
+            contractsToQuery.set(tx.contractAddress, { name: "", symbol: "" });
+          }
         }
+
+        // Try to get token URI for metadata
+        let tokenURI = "";
+        let imageUrl: string | null = null;
+        try {
+          const contract = new ethers.Contract(tx.contractAddress, ERC721_ABI, provider);
+          tokenURI = await contract.tokenURI(BigInt(tx.tokenID));
+          if (tokenURI.startsWith("ipfs://")) {
+            imageUrl = tokenURI.replace("ipfs://", "https://ipfs.io/ipfs/");
+          } else if (tokenURI.startsWith("http")) {
+            imageUrl = tokenURI;
+          }
+        } catch {}
+
+        items.push({
+          contractAddress: tx.contractAddress,
+          tokenId: BigInt(tx.tokenID),
+          name,
+          symbol,
+          tokenURI,
+          imageUrl,
+        });
       }
       setNfts(items);
     } catch (err) {

@@ -26,12 +26,18 @@ export const ERC20_ABI = [
 
 export const BEARER_NOTE_ESCROW_ABI = [
   "function nextNoteId() view returns (uint256)",
-  "function notes(uint256) view returns (address asset, uint256 faceValue, bytes32 secretHash, address issuer, uint64 createdAt, uint64 expiresAt, bool redeemed)",
+  "function notes(uint256) view returns (address asset, uint256 faceValue, bytes32 secretHash, address issuer, uint64 createdAt, uint64 expiresAt, bool redeemed, bool fdcAttested)",
   "function mintNote(address asset, uint256 faceValue, bytes32 secretHash, uint64 expiresAt) returns (uint256)",
+  "function mintNoteAttested((((string,string,string,string,string,string,string),(bytes32,bytes32,bytes32,(string,string,string,string,string,string,string))),bytes) proof, address asset, uint256 faceValue, bytes32 secretHash, uint64 expiresAt) returns (uint256)",
   "function commitRedemption(uint256 noteId, bytes32 commitment)",
   "function redeemNote(uint256 noteId, bytes32 secret, uint256 amount)",
   "function cancelNote(uint256 noteId, bytes32 secret)",
-  "event NoteMinted(uint256 indexed noteId, address indexed asset, address indexed issuer, uint256 faceValue, uint64 expiresAt)",
+  "function complianceUrlPrefix() view returns (string)",
+  "function complianceMaxAge() view returns (uint256)",
+  "function fdcAttestedMintCount() view returns (uint256)",
+  "function setComplianceUrlPrefix(string prefix)",
+  "function setComplianceMaxAge(uint256 maxAge)",
+  "event NoteMinted(uint256 indexed noteId, address indexed asset, address indexed issuer, uint256 faceValue, uint64 expiresAt, bool fdcAttested)",
   "event NoteRedeemed(uint256 indexed noteId, address indexed asset, address indexed merchant, address issuer, uint256 amount, uint256 issuerChange)",
 ];
 
@@ -54,6 +60,25 @@ export const CONTRACT_REGISTRY_ABI = [
   "function getContractAddressByName(string name) view returns (address)",
   "function getContractAddressByHash(bytes32 nameHash) view returns (address)",
   "function getAllContracts() view returns (string[] names, address[] addresses)",
+];
+
+// Flare Data Connector system contracts (resolved via ContractRegistry at runtime).
+export const FDC_HUB_ABI = [
+  "function requestAttestation(bytes data) payable returns (uint256)",
+];
+export const FDC_REQUEST_FEE_ABI = [
+  "function getRequestFee(bytes data, uint256 responseCount) view returns (uint256)",
+];
+export const FLARE_SYSTEMS_MANAGER_ABI = [
+  "function getVotingRoundStartBlockNumber(uint256 votingRoundId) view returns (uint256)",
+  "function getCurrentVotingRoundId() view returns (uint256)",
+];
+export const RELAY_ABI = [
+  "function getLatestVotingRoundId() view returns (uint256)",
+  "function merkleRoot(uint256 votingRoundId, bytes32 submissionAccount) view returns (bytes32)",
+];
+export const FDC_VERIFICATION_ABI = [
+  "function verifyWeb2Json((((string,string,string,string,string,string,string),(bytes32,bytes32,bytes32,(string,string,string,string,string,string,string))),bytes) proof) view returns (bool)",
 ];
 
 export const WNAT_ABI = [
@@ -100,12 +125,45 @@ export const CLAIM_SETUP_MANAGER_ABI = [
   "function continuousClaim(address delegate, uint256 executorFeeBips, uint256[] rewardEpochIds)",
 ];
 
+export const SIMPLE_SWAP_ABI = [
+  "function createPair(address tokenA, address tokenB)",
+  "function addLiquidity(address tokenA, address tokenB, uint256 amountA, uint256 amountB)",
+  "function swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 minAmountOut) returns (uint256)",
+  "function getQuote(address tokenIn, address tokenOut, uint256 amountIn) view returns (uint256)",
+  "function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut) pure returns (uint256)",
+  "function getReserves(address tokenA, address tokenB) view returns (uint256 reserveA, uint256 reserveB)",
+  "function pairCount() view returns (uint256)",
+  "function getPairAt(uint256 index) view returns (address tokenA, address tokenB, uint256 reserveA, uint256 reserveB)",
+  "function pairId(address tokenA, address tokenB) pure returns (bytes32)",
+  "event SwapExecuted(bytes32 indexed pairId, address indexed user, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut)",
+];
+
+export const DISTRIBUTION_TO_DELEGATORS_ABI = [
+  "function getClaimableAmountOf(address account, uint256 month) view returns (uint256 amount, bool claimed)",
+  "function getClaimableMonths() view returns (uint256)",
+  "function getCurrentMonth() view returns (uint256)",
+  "function claim(address rewardOwner, address recipient, uint256 month, bool wrap) returns (uint256)",
+  "function totalClaimedWei() view returns (uint256)",
+];
+
+export const ASSET_MANAGER_ABI = [
+  "function asset() view returns (string)",
+  "function symbol() view returns (string)",
+  "function getAssetToUbaRatio() view returns (uint256)",
+  "function getCollateralRatioBps() view returns (uint256)",
+  "function getMintingFeeBps() view returns (uint256)",
+  "function getRedemptionFeeBps() view returns (uint256)",
+  "function getFAssetBalance(address owner) view returns (uint256)",
+  "function redeem(uint256 lots, string underlyingAddress, string underlyingReturnAddress) returns (uint256)",
+];
+
 export interface ContractAddresses {
   stableCoin: string;
   cashEscrow: string;
   assetRegistry: string;
   bearerNoteEscrow: string;
   fxrp: string;
+  simpleSwap: string;
   contractRegistry: string;
 }
 
@@ -115,6 +173,7 @@ export const DEPLOYED_ADDRESSES: ContractAddresses = {
   assetRegistry: process.env.NEXT_PUBLIC_ASSET_REGISTRY_ADDRESS || "",
   bearerNoteEscrow: process.env.NEXT_PUBLIC_BEARER_NOTE_ESCROW_ADDRESS || "",
   fxrp: process.env.NEXT_PUBLIC_FXRP_ADDRESS || "",
+  simpleSwap: process.env.NEXT_PUBLIC_SIMPLE_SWAP_ADDRESS || "",
   contractRegistry: "0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019",
 };
 
@@ -144,6 +203,13 @@ export function getCashEscrowContract(
   address: string
 ) {
   return new ethers.Contract(address, CASH_ESCROW_ABI, provider);
+}
+
+export function getSimpleSwapContract(
+  provider: ethers.Provider | ethers.Signer,
+  address: string
+) {
+  return new ethers.Contract(address, SIMPLE_SWAP_ABI, provider);
 }
 
 export function getWNatContract(

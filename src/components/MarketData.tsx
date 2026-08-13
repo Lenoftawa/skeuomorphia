@@ -6,6 +6,7 @@ import type { PriceHistory } from "@/hooks/useFTSO";
 import { Sparkline } from "./Sparkline";
 import { PriceChart } from "./PriceChart";
 import { TokenLogo } from "./TokenLogo";
+import { AssetNews } from "./AssetNews";
 
 interface MarketDataProps {
   prices: PriceFeed[];
@@ -48,6 +49,7 @@ export function MarketData({ prices, loading, error, history }: MarketDataProps)
             symbol={selectedSymbol}
             height={260}
           />
+          <AssetNews symbol={selectedSymbol} />
         </div>
       )}
 

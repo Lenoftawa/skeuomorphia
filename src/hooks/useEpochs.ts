@@ -5,14 +5,13 @@ import { ethers } from "ethers";
 import { FLARE_NETWORKS, DEFAULT_NETWORK } from "@/lib/flare";
 import { resolveFlareContract } from "@/lib/contracts";
 
+// FTSOv2 FtsoManager ABI — verified against Coston2 contract
+// Note: FTSOv2 does not expose data provider enumeration on FtsoManager.
 const FTSO_MANAGER_ABI_V2 = [
   "function getCurrentRewardEpochId() view returns (uint256)",
-  "function getRewardEpochDurationSeconds() view returns (uint256)",
   "function getCurrentVotingEpochId() view returns (uint256)",
-  "function getVotingEpochDurationSeconds() view returns (uint256)",
-  "function getDataProviderCount() view returns (uint256)",
-  "function getDataProviderAt(uint256 index) view returns (address)",
-  "function getDataProviderInfo(address) view returns (string name, string symbol, uint256 votePower, bool active)",
+  "function rewardEpochDurationSeconds() view returns (uint256)",
+  "function votingEpochDurationSeconds() view returns (uint256)",
 ];
 
 export interface EpochInfo {
@@ -20,20 +19,10 @@ export interface EpochInfo {
   rewardEpochDuration: number;
   currentVotingEpoch: number;
   votingEpochDuration: number;
-  dataProviderCount: number;
-}
-
-export interface DataProviderStats {
-  address: string;
-  name: string;
-  symbol: string;
-  votePower: bigint;
-  active: boolean;
 }
 
 export function useEpochs() {
   const [epochInfo, setEpochInfo] = useState<EpochInfo | null>(null);
-  const [providers, setProviders] = useState<DataProviderStats[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,19 +33,18 @@ export function useEpochs() {
     setError(null);
     try {
       const ftsoMgrAddr = await resolveFlareContract("FtsoManager", provider);
-      if (!ftsoMgrAddr) {
+      if (!ftsoMgrAddr || ftsoMgrAddr === ethers.ZeroAddress) {
         setError("FtsoManager not found in registry");
         return;
       }
       const ftsoMgr = new ethers.Contract(ftsoMgrAddr, FTSO_MANAGER_ABI_V2, provider);
 
-      const [rewardEpoch, rewardDuration, votingEpoch, votingDuration, dpCount] =
+      const [rewardEpoch, rewardDuration, votingEpoch, votingDuration] =
         await Promise.all([
           ftsoMgr.getCurrentRewardEpochId(),
-          ftsoMgr.getRewardEpochDurationSeconds(),
+          ftsoMgr.rewardEpochDurationSeconds(),
           ftsoMgr.getCurrentVotingEpochId(),
-          ftsoMgr.getVotingEpochDurationSeconds(),
-          ftsoMgr.getDataProviderCount(),
+          ftsoMgr.votingEpochDurationSeconds(),
         ]);
 
       setEpochInfo({
@@ -64,27 +52,7 @@ export function useEpochs() {
         rewardEpochDuration: Number(rewardDuration),
         currentVotingEpoch: Number(votingEpoch),
         votingEpochDuration: Number(votingDuration),
-        dataProviderCount: Number(dpCount),
       });
-
-      const maxProviders = Math.min(Number(dpCount), 30);
-      const dps: DataProviderStats[] = [];
-      for (let i = 0; i < maxProviders; i++) {
-        try {
-          const dpAddress = await ftsoMgr.getDataProviderAt(i);
-          const info = await ftsoMgr.getDataProviderInfo(dpAddress);
-          dps.push({
-            address: dpAddress,
-            name: info[0],
-            symbol: info[1],
-            votePower: info[2],
-            active: info[3],
-          });
-        } catch {
-          continue;
-        }
-      }
-      setProviders(dps);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load epoch data");
     } finally {
@@ -96,5 +64,5 @@ export function useEpochs() {
     refresh();
   }, [refresh]);
 
-  return { epochInfo, providers, loading, error, refresh };
+  return { epochInfo, loading, error, refresh };
 }

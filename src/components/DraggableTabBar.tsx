@@ -4,6 +4,27 @@ import { useRef, useState, useEffect } from "react";
 import type { PanelId, DragData } from "@/lib/types";
 import { PANEL_META, ALL_PANEL_IDS } from "@/lib/panels";
 
+const PANEL_ICONS: Record<PanelId, string> = {
+  market: "◈",
+  atm: "$",
+  trading: "↔",
+  portfolio: "□",
+  transactions: "⇄",
+  help: "?",
+  delegation: "✓",
+  alerts: "⚠",
+  transfer: "→",
+  governance: "⌂",
+  fassets: "★",
+  flaredrop: "✦",
+  staking: "⛁",
+  epochs: "◎",
+  explorer: "◎",
+  nft: "🎴",
+  swap: "⇆",
+  command: ">_",
+};
+
 interface DraggableTabBarProps {
   columnId: string;
   panels: PanelId[];
@@ -98,6 +119,7 @@ export function DraggableTabBar({
                       setShowPicker(false);
                     }}
                   >
+                    <span className="tab-icon text-terminal-amber">{PANEL_ICONS[p]}</span>
                     <span className="panel-picker-key">{PANEL_META[p].fnKey}</span>
                     <span>{PANEL_META[p].label}</span>
                   </button>
@@ -158,6 +180,7 @@ export function DraggableTabBar({
             }}
             onClick={() => onSelect(index)}
           >
+            <span className="tab-icon">{PANEL_ICONS[panelId]}</span>
             <span className="tab-label">{meta.label}</span>
             {meta.closable && panels.length > 1 && (
               <button
@@ -196,6 +219,7 @@ export function DraggableTabBar({
                     setShowPicker(false);
                   }}
                 >
+                  <span className="tab-icon text-terminal-amber">{PANEL_ICONS[p]}</span>
                   <span className="panel-picker-key">{PANEL_META[p].fnKey}</span>
                   <span>{PANEL_META[p].label}</span>
                 </button>
