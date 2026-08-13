@@ -50,6 +50,8 @@ export const FTSO_SYMBOLS = [
   "PAXG", "BERA", "OP", "PUMP", "XPL", "MON", "NIGHT",
 ];
 
+export const FLARE_FOCUS_SYMBOLS = ["FLR", "BTC", "XRP", "LTC", "XLM", "DOGE"];
+
 export const DENOMINATIONS = [100, 50, 20, 10, 5, 1];
 
 export const STABLE_COIN_DECIMALS = 6;
