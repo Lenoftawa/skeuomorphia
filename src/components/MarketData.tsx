@@ -67,7 +67,7 @@ export function MarketData({ prices, loading, error, history }: MarketDataProps)
               <span className="ml-auto text-terminal-white-dim">COSTON2</span>
             </div>
             <div className="mt-2 space-y-1.5 opacity-60" aria-hidden="true">
-              {Array.from({ length: 7 }).map((_, index) => (
+              {Array.from({ length: 6 }).map((_, index) => (
                 <div key={index} className="grid grid-cols-[1fr_1fr_1fr_70px] gap-3 px-2 py-2 animate-pulse">
                   <span className="h-2 rounded-sm bg-terminal-amber/20" />
                   <span className="h-2 rounded-sm bg-terminal-white-faint/40" />
