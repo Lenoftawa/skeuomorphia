@@ -9,3 +9,4 @@ typechain-types/
 *.log
 .DS_Store
 tsconfig.tsbuildinfo
+.claude/worktrees/
