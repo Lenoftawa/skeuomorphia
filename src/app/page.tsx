@@ -85,10 +85,10 @@ const PanelRenderer = memo(function PanelRenderer({ panelId, state }: { panelId:
   DELEGATE   - FTSO delegation panel
   ALERTS     - Price alerts panel
   TRANSFER   - Send FLR/FLRD
-  GOVERNANCE - View & vote on proposals
-  FASSETS    - F-Asset minting/redeeming
+  GOVERNANCE - View real WFLR governance power
+  FASSETS    - F-Asset state, mint instructions, redemption
   FLAREDROP  - Claim FlareDrop rewards
-  STAKING    - rFLR staking panel
+  STAKING    - rFLR reward claiming and withdrawal
   EPOCHS     - FTSO epoch explorer
   EXPLORER   - On-chain tx history
   NFT        - NFT gallery
@@ -342,10 +342,10 @@ function HelpPanel() {
             - <span className="text-terminal-amber">FTSO Delegation</span> (F7): Wrap FLR, delegate to data providers, claim rewards<br />
             - <span className="text-terminal-amber">Price Alerts</span> (F8): Set threshold alerts on any FTSO asset<br />
             - <span className="text-terminal-amber">Token Transfer</span>: Send FLR or FLRD to any address<br />
-            - <span className="text-terminal-amber">Governance</span>: View and vote on Flare Improvement Proposals<br />
-            - <span className="text-terminal-amber">F-Assets</span>: Mint/redeem wrapped L1 assets (fBTC, fXRP, fDOGE...)<br />
-            - <span className="text-terminal-amber">FlareDrop</span>: Claim monthly FLR distribution rewards<br />
-            - <span className="text-terminal-amber">rFLR Staking</span>: Stake FLR via RNat for yield rewards<br />
+            - <span className="text-terminal-amber">Governance</span>: View real WFLR voting power and delegations<br />
+            - <span className="text-terminal-amber">F-Assets</span>: Read live FXRP state, direct-mint instructions, and redeem FXRP<br />
+            - <span className="text-terminal-amber">FlareDrop</span>: Claim eligible distribution rewards on-chain<br />
+            - <span className="text-terminal-amber">rFLR Rewards</span>: Claim RNat project rewards and withdraw unlocked WFLR<br />
             - <span className="text-terminal-amber">Epoch Explorer</span>: FTSO epoch info + data provider stats<br />
             - <span className="text-terminal-amber">Block Explorer</span>: On-chain transaction history from Flare explorer<br />
             - <span className="text-terminal-amber">NFT Gallery</span>: View NFTs in connected wallet<br />
@@ -364,8 +364,10 @@ function HelpPanel() {
           <div className="text-terminal-amber mb-1">SMART CONTRACTS</div>
           <div className="text-terminal-white">
             - StableCoin (FLRD): ERC20 with faucet<br />
-            - CashEscrow: Banknote minting & redemption<br />
-            - MockFTSO: Price feed simulation
+            - BearerNoteEscrow: Multi-asset banknote minting and redemption<br />
+            - AssetRegistry: Allowlisted note assets and value limits<br />
+            - SimpleSwap: Live FLRD/FXRP constant-product AMM<br />
+            - FTSOv2: Canonical Flare oracle prices
           </div>
         </div>
         <div>

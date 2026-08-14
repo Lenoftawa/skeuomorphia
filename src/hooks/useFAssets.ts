@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { ethers } from "ethers";
 import { FLARE_NETWORKS, DEFAULT_NETWORK } from "@/lib/flare";
-import { resolveFlareContract, DEPLOYED_ADDRESSES, ERC20_ABI } from "@/lib/contracts";
+import { DEPLOYED_ADDRESSES, ERC20_ABI } from "@/lib/contracts";
 import type { PriceFeed } from "@/lib/types";
 
 export interface FAssetInfo {
@@ -12,71 +12,84 @@ export interface FAssetInfo {
   chain: string;
   decimals: number;
   price: number;
-  mintFeeBps: number;
-  redemptionFeeBps: number;
-  collateralRatioBps: number;
+  mintFeeBips: number;
   totalSupply: number;
   assetManagerAddress: string;
   tokenAddress: string;
   userBalance: number;
+  minimumRedeemAmount: number;
+  directMintingPaymentAddress: string;
 }
 
-// FAssets available on Coston2 — only FXRP is live
 const FASSET_REGISTRY = [
-  { symbol: "FXRP", underlying: "XRP", chain: "Ripple", decimals: 6, assetManagerName: "AssetManagerFXRP", tokenAddress: "0x0b6A3645c240605887a5532109323A3E12273dc7" },
+  {
+    symbol: "FXRP",
+    underlying: "XRP",
+    chain: "XRPL",
+    decimals: 6,
+    tokenAddress: DEPLOYED_ADDRESSES.fxrp || "0x0b6A3645c240605887a5532109323A3E12273dc7",
+  },
+];
+
+const FASSET_ABI = ERC20_ABI.concat([
+  "function totalSupply() view returns (uint256)",
+  "function assetManager() view returns (address)",
+]);
+
+const ASSET_MANAGER_INFO_ABI = [
+  "function fAsset() view returns (address)",
+  "function getDirectMintingFeeBIPS() view returns (uint256)",
+  "function minimumRedeemAmountUBA() view returns (uint256)",
+  "function directMintingPaymentAddress() view returns (string)",
+];
+
+const ASSET_MANAGER_REDEEM_ABI = [
+  "function redeemAmount(uint256 amountUBA, string redeemerUnderlyingAddress, address payable executor) payable returns (uint256 redeemedAmountUBA)",
 ];
 
 export function useFAssets(prices: PriceFeed[], address: string | null) {
   const [fassets, setFassets] = useState<FAssetInfo[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastTxHash, setLastTxHash] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const network = FLARE_NETWORKS[DEFAULT_NETWORK];
     const provider = new ethers.JsonRpcProvider(network.rpcUrl);
     const priceMap: Record<string, number> = {};
-    for (const p of prices) priceMap[p.symbol] = p.price;
+    for (const price of prices) priceMap[price.symbol] = price.price;
 
     const assets: FAssetInfo[] = [];
-    for (const fa of FASSET_REGISTRY) {
+    for (const config of FASSET_REGISTRY) {
       try {
-        const amAddr = await resolveFlareContract(fa.assetManagerName, provider);
-        if (!amAddr || amAddr === ethers.ZeroAddress) {
-          // AssetManager not found — skip
-          continue;
-        }
-        const AM_ABI = [
-          "function getCollateralRatioBps() view returns (uint256)",
-          "function getMintingFeeBps() view returns (uint256)",
-          "function getRedemptionFeeBps() view returns (uint256)",
-        ];
-        const am = new ethers.Contract(amAddr, AM_ABI, provider);
-        const token = new ethers.Contract(fa.tokenAddress, ERC20_ABI.concat(["function totalSupply() view returns (uint256)"]), provider);
-
-        const [collateralRatioBps, mintingFeeBps, redemptionFeeBps, totalSupply, userBal] = await Promise.all([
-          am.getCollateralRatioBps().catch(() => 0n),
-          am.getMintingFeeBps().catch(() => 0n),
-          am.getRedemptionFeeBps().catch(() => 0n),
-          token.totalSupply().catch(() => 0n),
-          address ? token.balanceOf(address).catch(() => 0n) : Promise.resolve(0n),
+        if (await provider.getCode(config.tokenAddress) === "0x") continue;
+        const token = new ethers.Contract(config.tokenAddress, FASSET_ABI, provider);
+        const [assetManagerAddress, totalSupply, userBalance] = await Promise.all([
+          token.assetManager(),
+          token.totalSupply(),
+          address ? token.balanceOf(address) : Promise.resolve(0n),
         ]);
+        const assetManager = new ethers.Contract(assetManagerAddress, ASSET_MANAGER_INFO_ABI, provider);
+        const [managedToken, mintFeeBips, minimumRedeemAmount, directMintingPaymentAddress] = await Promise.all([
+          assetManager.fAsset(),
+          assetManager.getDirectMintingFeeBIPS(),
+          assetManager.minimumRedeemAmountUBA(),
+          assetManager.directMintingPaymentAddress(),
+        ]);
+        if (managedToken.toLowerCase() !== config.tokenAddress.toLowerCase()) continue;
 
         assets.push({
-          symbol: fa.symbol,
-          underlying: fa.underlying,
-          chain: fa.chain,
-          decimals: fa.decimals,
-          price: priceMap[fa.underlying] || 0,
-          mintFeeBps: Number(mintingFeeBps),
-          redemptionFeeBps: Number(redemptionFeeBps),
-          collateralRatioBps: Number(collateralRatioBps),
-          totalSupply: Number(ethers.formatUnits(totalSupply, fa.decimals)),
-          assetManagerAddress: amAddr,
-          tokenAddress: fa.tokenAddress,
-          userBalance: Number(ethers.formatUnits(userBal, fa.decimals)),
+          ...config,
+          price: priceMap[config.underlying] || 0,
+          mintFeeBips: Number(mintFeeBips),
+          totalSupply: Number(ethers.formatUnits(totalSupply, config.decimals)),
+          assetManagerAddress,
+          userBalance: Number(ethers.formatUnits(userBalance, config.decimals)),
+          minimumRedeemAmount: Number(ethers.formatUnits(minimumRedeemAmount, config.decimals)),
+          directMintingPaymentAddress,
         });
       } catch {
-        // Skip this FAsset if we can't read it
+        continue;
       }
     }
     setFassets(assets);
@@ -86,54 +99,41 @@ export function useFAssets(prices: PriceFeed[], address: string | null) {
     refresh();
   }, [refresh]);
 
-  // FAsset minting requires an XRPL payment to the Core Vault — cannot be done from EVM
-  // FAsset redemption CAN be done on-chain if the user has FAsset tokens
-  const redeem = useCallback(
-    async (symbol: string, lots: string) => {
-      if (!address) {
-        setError("Wallet not connected");
-        return;
-      }
-      const network = FLARE_NETWORKS[DEFAULT_NETWORK];
-      const provider = new ethers.JsonRpcProvider(network.rpcUrl);
-      const fa = FASSET_REGISTRY.find((f) => f.symbol === symbol);
-      if (!fa) {
-        setError("Unknown FAsset");
-        return;
-      }
-      setBusy(true);
-      setError(null);
-      try {
-        const amAddr = await resolveFlareContract(fa.assetManagerName, provider);
-        if (!amAddr || amAddr === ethers.ZeroAddress) {
-          setError("AssetManager not found on this network");
-          return;
-        }
-        // Get a signer-aware provider from the browser
-        const browserProvider = new ethers.BrowserProvider(window.ethereum as any);
-        const signer = await browserProvider.getSigner();
-        const REDEEM_ABI = [
-          "function redeem(uint256 lots, string underlyingAddress, string underlyingReturnAddress) returns (uint256)",
-        ];
-        const am = new ethers.Contract(amAddr, REDEEM_ABI, signer);
-        // For redemption, user needs to provide their underlying chain address
-        // For now, use a placeholder — the user must provide their XRP address
-        const underlyingAddress = prompt(`Enter your ${fa.underlying} address to receive redeemed ${fa.underlying}:`);
-        if (!underlyingAddress) {
-          setError("Redemption cancelled — underlying address required");
-          return;
-        }
-        const tx = await am.redeem(BigInt(lots), underlyingAddress, underlyingAddress);
-        await tx.wait();
-        await refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Redemption failed");
-      } finally {
-        setBusy(false);
-      }
-    },
-    [address, refresh]
-  );
+  const redeem = useCallback(async (symbol: string, amount: string) => {
+    if (!address || !window.ethereum) {
+      setError("Wallet not connected");
+      return;
+    }
+    const asset = fassets.find((item) => item.symbol === symbol);
+    if (!asset) {
+      setError("FAsset is not available on this network");
+      return;
+    }
+    const amountUBA = ethers.parseUnits(amount, asset.decimals);
+    if (Number(amount) < asset.minimumRedeemAmount) {
+      setError(`Minimum redemption is ${asset.minimumRedeemAmount} ${asset.symbol}`);
+      return;
+    }
+    const underlyingAddress = window.prompt(`Enter the ${asset.chain} address that will receive ${asset.underlying}:`);
+    if (!underlyingAddress) return;
 
-  return { fassets, busy, error, redeem, refresh };
+    setBusy(true);
+    setError(null);
+    setLastTxHash(null);
+    try {
+      const browserProvider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await browserProvider.getSigner();
+      const assetManager = new ethers.Contract(asset.assetManagerAddress, ASSET_MANAGER_REDEEM_ABI, signer);
+      const tx = await assetManager.redeemAmount(amountUBA, underlyingAddress, ethers.ZeroAddress);
+      await tx.wait();
+      setLastTxHash(tx.hash);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Redemption failed");
+    } finally {
+      setBusy(false);
+    }
+  }, [address, fassets, refresh]);
+
+  return { fassets, busy, error, lastTxHash, redeem, refresh };
 }

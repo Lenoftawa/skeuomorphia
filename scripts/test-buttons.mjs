@@ -290,9 +290,7 @@ async function main() {
   await new Promise((r) => setTimeout(r, 1000));
 
   console.log("\n=== 9. PANEL + BUTTONS ===");
-  // Click + buttons to add panels
-  const plusButtons = await page.$$('button:has(+)');
-  // Try clicking + buttons by position
+  // Click + buttons to add panels — use evaluate instead of invalid CSS selector
   const plusClicked = await page.evaluate(() => {
     const btns = [...document.querySelectorAll("button")];
     const plus = btns.find((b) => b.textContent.trim() === "+" && b.getBoundingClientRect().width < 30);

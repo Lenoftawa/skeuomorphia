@@ -139,8 +139,8 @@ export const SIMPLE_SWAP_ABI = [
 ];
 
 export const DISTRIBUTION_TO_DELEGATORS_ABI = [
-  "function getClaimableAmountOf(address account, uint256 month) view returns (uint256 amount, bool claimed)",
-  "function getClaimableMonths() view returns (uint256)",
+  "function getClaimableAmountOf(address account, uint256 month) view returns (uint256 amount)",
+  "function getClaimableMonths() view returns (uint256 startMonth, uint256 endMonth)",
   "function getCurrentMonth() view returns (uint256)",
   "function claim(address rewardOwner, address recipient, uint256 month, bool wrap) returns (uint256)",
   "function totalClaimedWei() view returns (uint256)",

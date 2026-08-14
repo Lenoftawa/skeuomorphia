@@ -49,7 +49,7 @@ export function FlareDropPanel({ isConnected, flaredrop, onConnect }: FlareDropP
         </div>
 
         <div className="bg-terminal-panel border border-terminal-border p-2">
-          <div className="text-terminal-white-dim text-[10px]">TOTAL CLAIMED (ALL TIME)</div>
+          <div className="text-terminal-white-dim text-[10px]">PROTOCOL TOTAL CLAIMED (ALL ACCOUNTS)</div>
           <div className="flex items-center gap-2 text-terminal-amber text-sm font-bold"><TokenLogo symbol="FLR" size={18} />{totalClaimed.toFixed(6)} FLR</div>
         </div>
 

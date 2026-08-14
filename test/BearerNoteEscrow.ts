@@ -38,7 +38,7 @@ describe("BearerNoteEscrow", function () {
     const fixture = await deployFixture();
     await expect(fixture.escrow.connect(fixture.issuer).mintNote(await fixture.token.getAddress(), units("100"), secretHash, 0))
       .to.emit(fixture.escrow, "NoteMinted")
-      .withArgs(1n, await fixture.token.getAddress(), fixture.issuer.address, units("100"), 0);
+      .withArgs(1n, await fixture.token.getAddress(), fixture.issuer.address, units("100"), 0, false);
 
     expect(await fixture.token.balanceOf(await fixture.escrow.getAddress())).to.equal(units("100"));
   });

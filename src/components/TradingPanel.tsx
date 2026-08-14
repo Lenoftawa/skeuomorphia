@@ -29,7 +29,7 @@ export function TradingPanel({ prices, balance, isConnected, history, signer }: 
   const orderValue = selectedPrice && amount ? parseFloat(amount) * selectedPrice.price : 0;
 
   // Check if this symbol is swappable via SimpleSwap
-  const swapTokenSymbol = selectedSymbol === "FLR" || selectedSymbol === "WFLR" ? "FLRD" : selectedSymbol === "XRP" ? "FXRP" : null;
+  const swapTokenSymbol = selectedSymbol === "XRP" ? "FXRP" : null;
   const canExecute = swapTokenSymbol !== null && !!DEPLOYED_ADDRESSES.simpleSwap && !!signer;
 
   const handleExecute = useCallback(async () => {
@@ -180,8 +180,8 @@ export function TradingPanel({ prices, balance, isConnected, history, signer }: 
           </div>
         ) : (
           <div className="border border-terminal-amber/40 bg-terminal-amber/10 p-2 text-[10px] text-terminal-amber">
-            [VIEW-ONLY] Spot execution available for FLRD↔FXRP pairs via SimpleSwap.
-            Select FLR/XRP to enable execution. Prices are live FTSOv2 oracle reads.
+            [VIEW-ONLY] Spot execution is available for FLRD↔FXRP via SimpleSwap.
+            Select XRP to enable execution. Prices are live FTSOv2 oracle reads.
           </div>
         )}
 

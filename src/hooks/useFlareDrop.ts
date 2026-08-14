@@ -6,8 +6,8 @@ import { FLARE_NETWORKS, DEFAULT_NETWORK } from "@/lib/flare";
 import { resolveFlareContract } from "@/lib/contracts";
 
 const DISTRIBUTION_TO_DELEGATORS_ABI = [
-  "function getClaimableAmountOf(address account, uint256 month) view returns (uint256 amount, bool claimed)",
-  "function getClaimableMonths() view returns (uint256)",
+  "function getClaimableAmountOf(address account, uint256 month) view returns (uint256 amount)",
+  "function getClaimableMonths() view returns (uint256 startMonth, uint256 endMonth)",
   "function getCurrentMonth() view returns (uint256)",
   "function claim(address rewardOwner, address recipient, uint256 month, bool wrap) returns (uint256)",
   "function totalClaimedWei() view returns (uint256)",
@@ -37,13 +37,13 @@ export function useFlareDrop(
         return;
       }
       const contract = new ethers.Contract(distAddr, DISTRIBUTION_TO_DELEGATORS_ABI, provider);
-      const currentMonth = await contract.getCurrentMonth();
+      const [startMonth, endMonth] = await contract.getClaimableMonths();
       const months: number[] = [];
       let total = 0;
-      for (let i = 0; i < Number(currentMonth); i++) {
+      for (let i = Number(startMonth); i <= Number(endMonth); i++) {
         try {
-          const [amount, claimed] = await contract.getClaimableAmountOf(address, i);
-          if (!claimed && amount > 0) {
+          const amount = await contract.getClaimableAmountOf(address, i);
+          if (amount > 0) {
             months.push(i);
             total += Number(ethers.formatEther(amount));
           }

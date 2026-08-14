@@ -65,9 +65,9 @@ export function FAssetsPanel({ isConnected, fassets, onConnect }: FAssetsPanelPr
                 <div className="grid grid-cols-2 gap-1 mt-1 text-[8px] text-terminal-white-dim">
                   <div>SUPPLY: {a.totalSupply.toLocaleString()}</div>
                   <div>YOUR BAL: {a.userBalance.toFixed(4)}</div>
-                  <div>MINT FEE: {a.mintFeeBps / 100}%</div>
-                  <div>REDEEM FEE: {a.redemptionFeeBps / 100}%</div>
-                  <div>COLLATERAL RATIO: {a.collateralRatioBps / 100}%</div>
+                  <div>MINT FEE: {a.mintFeeBips / 100}%</div>
+                  <div>MIN REDEEM: {a.minimumRedeemAmount} {a.symbol}</div>
+                  <div>CORE VAULT: {a.directMintingPaymentAddress.slice(0, 8)}...</div>
                   <div>AM: {a.assetManagerAddress.slice(0, 8)}...{a.assetManagerAddress.slice(-4)}</div>
                 </div>
                 <div className="flex gap-1 mt-2">
@@ -96,8 +96,8 @@ export function FAssetsPanel({ isConnected, fassets, onConnect }: FAssetsPanelPr
             </div>
             <div className="bg-terminal-panel border border-terminal-border p-2 space-y-1 text-[10px]">
               <div className="flex justify-between"><span className="text-terminal-white-dim">PRICE</span><span className="text-terminal-green">${selected.price.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-terminal-white-dim">MINT FEE</span><span>{selected.mintFeeBps / 100}%</span></div>
-              <div className="flex justify-between"><span className="text-terminal-white-dim">COLLATERAL RATIO</span><span>{selected.collateralRatioBps / 100}%</span></div>
+              <div className="flex justify-between"><span className="text-terminal-white-dim">DIRECT MINT FEE</span><span>{selected.mintFeeBips / 100}%</span></div>
+              <div className="flex justify-between"><span className="text-terminal-white-dim">CORE VAULT</span><span>{selected.directMintingPaymentAddress}</span></div>
             </div>
             <div className="border border-terminal-amber/40 bg-terminal-amber/10 p-2 text-[10px] text-terminal-amber">
               <div className="font-bold mb-1">HOW TO MINT {selected.symbol}:</div>
@@ -126,10 +126,10 @@ export function FAssetsPanel({ isConnected, fassets, onConnect }: FAssetsPanelPr
             </div>
             <div className="bg-terminal-panel border border-terminal-border p-2 space-y-1 text-[10px]">
               <div className="flex justify-between"><span className="text-terminal-white-dim">PRICE</span><span className="text-terminal-green">${selected.price.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-terminal-white-dim">REDEMPTION FEE</span><span>{selected.redemptionFeeBps / 100}%</span></div>
+              <div className="flex justify-between"><span className="text-terminal-white-dim">MINIMUM</span><span>{selected.minimumRedeemAmount} {selected.symbol}</span></div>
             </div>
             <div>
-              <div className="text-terminal-amber text-[10px] font-bold mb-1">LOTS TO REDEEM</div>
+              <div className="text-terminal-amber text-[10px] font-bold mb-1">AMOUNT TO REDEEM ({selected.symbol})</div>
               <input
                 type="number"
                 value={redeemLots}

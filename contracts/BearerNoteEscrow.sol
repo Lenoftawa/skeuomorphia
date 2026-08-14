@@ -23,19 +23,19 @@ interface IWeb2Json {
         string abiSignature;
     }
 
-    struct Request {
-        bytes32 attestationType;
-        bytes32 sourceId;
-        bytes32 messageIntegrityCode;
-        RequestBody requestBody;
-    }
-
     struct ResponseBody {
         bytes abiEncodedData;
     }
 
+    /// @dev Matches the official Flare periphery IWeb2Json.Response struct.
+    ///      The FDC flattens attestationType/sourceId/votingRound/lowestUsedTimestamp
+    ///      directly into Response (no nested Request wrapper).
     struct Response {
-        Request request;
+        bytes32 attestationType;
+        bytes32 sourceId;
+        uint64 votingRound;
+        uint64 lowestUsedTimestamp;
+        RequestBody requestBody;
         ResponseBody responseBody;
     }
 
@@ -212,7 +212,7 @@ contract BearerNoteEscrow is Ownable, Pausable, ReentrancyGuard {
         if (!IFdcVerification(fdcVerification).verifyWeb2Json(proof)) revert FdcProofInvalid();
 
         // 2. Source-URL pinning (MitM defence per Flare URL-parsing guidance).
-        string memory url = proof.data.request.requestBody.url;
+        string memory url = proof.data.requestBody.url;
         if (!_startsWith(bytes(url), bytes(complianceUrlPrefix))) revert ComplianceUrlMismatch();
 
         // 3. Decode the attested verdict.
