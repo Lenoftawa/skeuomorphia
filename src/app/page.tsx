@@ -42,12 +42,15 @@ import { useExplorer } from "@/hooks/useExplorer";
 import { useNFTs } from "@/hooks/useNFTs";
 import { useSwap } from "@/hooks/useSwap";
 import type { PanelId, PriceFeed } from "@/lib/types";
+import { FLARE_FOCUS_SYMBOLS } from "@/lib/flare";
 
 interface SharedState {
   prices: PriceFeed[];
+  focusPrices: PriceFeed[];
   loading: boolean;
   priceError: string | null;
   history: PriceHistory;
+  focusHistory: PriceHistory;
   wallet: ReturnType<typeof useWallet>;
   atm: ReturnType<typeof useATM>;
   delegation: ReturnType<typeof useDelegation>;
@@ -66,7 +69,7 @@ interface SharedState {
 
 const PanelRenderer = memo(function PanelRenderer({ panelId, state }: { panelId: PanelId; state: SharedState }) {
   const { focusPanel, addColumn, resetLayout } = useTerminalLayout();
-  const { prices, loading, priceError, history, wallet, atm, delegation, alerts, transfer, governance, fassets, flaredrop, staking, epochs, explorer, nfts, swap, onPrint } = state;
+  const { prices, focusPrices, loading, priceError, history, focusHistory, wallet, atm, delegation, alerts, transfer, governance, fassets, flaredrop, staking, epochs, explorer, nfts, swap, onPrint } = state;
 
   const handleCommand = useCallback(
     (cmd: string): string => {
@@ -172,7 +175,7 @@ Contracts: StableCoin (FLRD) + CashEscrow + FTSO`;
 
   switch (panelId) {
     case "market":
-      return <MarketData prices={prices} loading={loading} error={priceError} history={history} />;
+      return <MarketData prices={focusPrices} loading={loading} error={priceError} history={focusHistory} />;
     case "atm":
       return (
         <ATMPanel
@@ -433,6 +436,11 @@ function TerminalClock() {
 export default function TerminalPage() {
   const wallet = useWallet();
   const { prices, loading, error: priceError, history: priceHistory } = useFTSO(5000);
+  const focusSymbolSet = new Set<string>(FLARE_FOCUS_SYMBOLS);
+  const focusPrices = prices.filter((feed) => focusSymbolSet.has(feed.symbol));
+  const focusHistory: PriceHistory = Object.fromEntries(
+    Object.entries(priceHistory).filter(([symbol]) => focusSymbolSet.has(symbol))
+  );
   const atm = useATM(wallet.signer);
   const delegation = useDelegation(wallet.signer, wallet.address);
   const alerts = usePriceAlerts(prices);
@@ -487,9 +495,11 @@ export default function TerminalPage() {
 
   const sharedState: SharedState = {
     prices,
+    focusPrices,
     loading,
     priceError,
     history: priceHistory,
+    focusHistory,
     wallet,
     atm,
     delegation,
@@ -548,7 +558,7 @@ export default function TerminalPage() {
       </div>
 
       {/* Ticker Tape */}
-      <TickerTape prices={prices} />
+      <TickerTape prices={focusPrices} />
 
       {/* Main Terminal Layout — draggable, composable panels */}
       <TerminalLayout
